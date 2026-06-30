@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    profiles:
+      - local
+      - test
+    environment:
+      POSTGRES_DB: autoblog
+      POSTGRES_USER: autoblog
+      POSTGRES_PASSWORD: autoblog
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoblog -d autoblog"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:

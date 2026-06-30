@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: autoblog
+  profiles:
+    default: local
+  jpa:
+    open-in-view: false
+
+server:
+  error:
+    include-message: never
+    include-binding-errors: never
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
