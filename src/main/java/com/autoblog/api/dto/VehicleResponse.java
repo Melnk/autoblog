@@ -9,8 +9,14 @@ public record VehicleResponse(
         String vin,
         String make,
         String model,
+        String generation,
         Integer year,
-        Instant createdAt
+        String engine,
+        String transmission,
+        String trim,
+        String market,
+        Instant createdAt,
+        Instant updatedAt
 ) {
     public static VehicleResponse from(VehicleView vehicle) {
         return new VehicleResponse(
@@ -18,8 +24,14 @@ public record VehicleResponse(
                 vehicle.vin(),
                 vehicle.make(),
                 vehicle.model(),
+                vehicle.generation(),
                 vehicle.year(),
-                vehicle.createdAt()
+                vehicle.engine(),
+                vehicle.transmission(),
+                vehicle.trim(),
+                vehicle.market(),
+                vehicle.createdAt(),
+                vehicle.updatedAt()
         );
     }
 }

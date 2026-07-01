@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/vehicles")
+@RequestMapping("/api/v1/vehicles")
 @Validated
 @Tag(name = "Vehicles")
 public class VehicleController {
@@ -37,17 +37,28 @@ public class VehicleController {
                 request.vin(),
                 request.make(),
                 request.model(),
-                request.year()
+                request.generation(),
+                request.year(),
+                request.engine(),
+                request.transmission(),
+                request.trim(),
+                request.market()
         ));
 
         return ResponseEntity
-                .created(URI.create("/api/vehicles/" + view.id()))
+                .created(URI.create("/api/v1/vehicles/" + view.id()))
                 .body(VehicleResponse.from(view));
     }
 
     @GetMapping("/{vehicleId}")
-    @Operation(summary = "Get a vehicle")
+    @Operation(summary = "Get a vehicle by id")
     public VehicleResponse getVehicle(@PathVariable UUID vehicleId) {
         return VehicleResponse.from(vehicles.getVehicle(vehicleId));
+    }
+
+    @GetMapping("/by-vin/{vin}")
+    @Operation(summary = "Get a vehicle by VIN")
+    public VehicleResponse getVehicleByVin(@PathVariable String vin) {
+        return VehicleResponse.from(vehicles.getVehicleByVin(vin));
     }
 }

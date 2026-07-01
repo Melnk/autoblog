@@ -1,46 +1,109 @@
-# Autoblog
+# AutoBlog
 
-Stage 1 backend for storing vehicles and tamper-evident timeline events.
+AutoBlog is a Spring Boot backend for vehicle-centric digital history. The main aggregate is a vehicle, and every vehicle event is append-only and hash-linked to the previous event so the timeline can be verified.
 
-## Requirements
+## Stack
 
-- Java 21+
-- Maven 3.9+
-- Docker Compose, for local PostgreSQL
+- Java 21
+- Spring Boot 3
+- Spring Web, Validation, Data JPA
+- PostgreSQL
+- Flyway
+- Swagger/OpenAPI
+- Maven
 
-## Run Locally
-
-Start PostgreSQL:
+## Start PostgreSQL
 
 ```bash
 docker compose --profile local up -d postgres
 ```
 
-Run the API:
+The local database uses:
 
-```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=local
-```
+- database: `autoblog`
+- username: `autoblog`
+- password: `autoblog`
+- port: `5432`
 
-Run tests:
+## Run Tests
 
 ```bash
 mvn test
 ```
 
-The test profile uses an in-memory H2 database. The local profile uses PostgreSQL at `localhost:5432` with database, username, and password all set to `autoblog`.
+Tests use the `test` profile and an in-memory H2 database with Flyway migrations.
+
+## Run Backend
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+## Example API Calls
+
+Create vehicle:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "vin": "XTA217030C0000000",
+    "make": "Lada",
+    "model": "Priora",
+    "generation": "2170",
+    "year": 2012,
+    "engine": "1.6",
+    "transmission": "MT",
+    "trim": "Norma",
+    "market": "RU"
+  }'
+```
+
+Get vehicle by VIN:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/by-vin/XTA217030C0000000
+```
+
+Add maintenance event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "MAINTENANCE",
+    "eventDate": "2026-06-28",
+    "odometerKm": 180000,
+    "title": "Замена масла",
+    "description": "Масло 5W-40, масляный фильтр",
+    "costAmount": 4500,
+    "costCurrency": "RUB",
+    "serviceName": "Гаражный сервис",
+    "payload": {
+      "oil": "5W-40",
+      "parts": ["oil_filter"]
+    }
+  }'
+```
+
+Get vehicle events:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events
+```
 
 ## API
 
-- `POST /api/vehicles` creates a vehicle.
-- `GET /api/vehicles/{vehicleId}` returns one vehicle.
-- `POST /api/vehicles/{vehicleId}/events` appends an event to the vehicle hash chain.
-- `GET /api/vehicles/{vehicleId}/timeline` returns timeline events in chain order.
+- `POST /api/v1/vehicles`
+- `GET /api/v1/vehicles/{vehicleId}`
+- `GET /api/v1/vehicles/by-vin/{vin}`
+- `POST /api/v1/vehicles/{vehicleId}/events`
+- `GET /api/v1/vehicles/{vehicleId}/events`
 
-Swagger UI is available at `/swagger-ui.html` when the app is running.
-
-## Notes
-
-- Controllers return DTOs only; JPA entities stay behind the application service.
-- Validation errors and domain errors return structured JSON from the global exception handler.
-- Stage 1 intentionally stops before frontend and auth.
+Vehicle events are append-only. There are no update or delete endpoints for vehicle events in this stage.

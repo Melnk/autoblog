@@ -1,12 +1,20 @@
 package com.autoblog.application;
 
-import java.time.Instant;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record AddVehicleEventCommand(
         UUID vehicleId,
-        String eventType,
-        Instant occurredAt,
-        String description
+        VehicleEventType type,
+        LocalDate eventDate,
+        Integer odometerKm,
+        String title,
+        String description,
+        BigDecimal costAmount,
+        String costCurrency,
+        String serviceName,
+        JsonNode payload
 ) {
 }

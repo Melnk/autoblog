@@ -1,5 +1,6 @@
 package com.autoblog.application;
 
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -13,10 +14,16 @@ public class EventHashService {
         String canonicalPayload = String.join("\n",
                 "vehicleId=" + input.vehicleId(),
                 "sequenceNumber=" + input.sequenceNumber(),
-                "occurredAt=" + input.occurredAt(),
-                "eventType=" + normalize(input.eventType()),
+                "type=" + input.type(),
+                "eventDate=" + input.eventDate(),
+                "odometerKm=" + normalize(input.odometerKm()),
+                "title=" + normalize(input.title()),
                 "description=" + normalize(input.description()),
-                "previousHash=" + normalize(input.previousHash())
+                "costAmount=" + normalize(input.costAmount()),
+                "costCurrency=" + normalize(input.costCurrency()),
+                "serviceName=" + normalize(input.serviceName()),
+                "payload=" + normalize(input.payloadCanonicalJson()),
+                "previousEventHash=" + normalize(input.previousEventHash())
         );
 
         try {
@@ -30,5 +37,13 @@ public class EventHashService {
 
     private String normalize(String value) {
         return value == null ? "" : value;
+    }
+
+    private String normalize(Integer value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private String normalize(BigDecimal value) {
+        return value == null ? "" : value.stripTrailingZeros().toPlainString();
     }
 }

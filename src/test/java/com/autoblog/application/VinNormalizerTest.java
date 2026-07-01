@@ -12,23 +12,37 @@ class VinNormalizerTest {
     private final VinNormalizer normalizer = new VinNormalizer();
 
     @Test
-    void normalizesVinBeforeValidation() {
-        assertThat(normalizer.normalizeAndValidate(" 1hg-cm82633a004352 "))
-                .isEqualTo("1HGCM82633A004352");
+    void lowercaseVinBecomesUppercase() {
+        assertThat(normalizer.normalizeAndValidate("xta217030c0000000"))
+                .isEqualTo("XTA217030C0000000");
+    }
+
+    @Test
+    void spacesAreTrimmed() {
+        assertThat(normalizer.normalizeAndValidate(" XTA217030C0000000 "))
+                .isEqualTo("XTA217030C0000000");
     }
 
     @ParameterizedTest
     @ValueSource(strings = {
-            "1HGCM82633A00435",
-            "1HGCM82633A0043521",
-            "1IGCM82633A004352",
-            "1OGCM82633A004352",
-            "1QGCM82633A004352",
-            "*****************"
+            "XTA217030I0000000",
+            "XTA217030O0000000",
+            "XTA217030Q0000000"
     })
-    void rejectsInvalidVin(String vin) {
+    void rejectsForbiddenCharacters(String vin) {
         assertThatThrownBy(() -> normalizer.normalizeAndValidate(vin))
                 .isInstanceOf(InvalidVinException.class)
-                .hasMessageContaining("VIN must be 17 characters");
+                .hasMessageContaining("excluding I, O, and Q");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "XTA217030C000000",
+            "XTA217030C00000000"
+    })
+    void rejectsNonSeventeenLengthVin(String vin) {
+        assertThatThrownBy(() -> normalizer.normalizeAndValidate(vin))
+                .isInstanceOf(InvalidVinException.class)
+                .hasMessageContaining("exactly 17 characters");
     }
 }

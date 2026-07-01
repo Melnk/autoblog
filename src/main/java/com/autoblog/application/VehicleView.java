@@ -8,7 +8,13 @@ public record VehicleView(
         String vin,
         String make,
         String model,
+        String generation,
         Integer year,
-        Instant createdAt
+        String engine,
+        String transmission,
+        String trim,
+        String market,
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }

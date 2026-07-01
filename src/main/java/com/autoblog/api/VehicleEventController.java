@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/vehicles/{vehicleId}")
+@RequestMapping("/api/v1/vehicles/{vehicleId}/events")
 @Validated
-@Tag(name = "Vehicle timeline")
+@Tag(name = "Vehicle events")
 public class VehicleEventController {
 
     private final VehicleApplicationService vehicles;
@@ -31,7 +31,7 @@ public class VehicleEventController {
         this.vehicles = vehicles;
     }
 
-    @PostMapping("/events")
+    @PostMapping
     @Operation(summary = "Add a vehicle event")
     public ResponseEntity<VehicleEventResponse> addEvent(
             @PathVariable UUID vehicleId,
@@ -39,20 +39,26 @@ public class VehicleEventController {
     ) {
         var view = vehicles.addEvent(new AddVehicleEventCommand(
                 vehicleId,
-                request.eventType(),
-                request.occurredAt(),
-                request.description()
+                request.type(),
+                request.eventDate(),
+                request.odometerKm(),
+                request.title(),
+                request.description(),
+                request.costAmount(),
+                request.costCurrency(),
+                request.serviceName(),
+                request.payload()
         ));
 
         return ResponseEntity
-                .created(URI.create("/api/vehicles/" + vehicleId + "/events/" + view.id()))
+                .created(URI.create("/api/v1/vehicles/" + vehicleId + "/events/" + view.id()))
                 .body(VehicleEventResponse.from(view));
     }
 
-    @GetMapping("/timeline")
-    @Operation(summary = "Get a vehicle timeline")
-    public List<VehicleEventResponse> timeline(@PathVariable UUID vehicleId) {
-        return vehicles.timeline(vehicleId).stream()
+    @GetMapping
+    @Operation(summary = "Get vehicle events")
+    public List<VehicleEventResponse> getEvents(@PathVariable UUID vehicleId) {
+        return vehicles.getEvents(vehicleId).stream()
                 .map(VehicleEventResponse::from)
                 .toList();
     }

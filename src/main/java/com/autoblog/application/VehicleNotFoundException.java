@@ -7,4 +7,8 @@ public class VehicleNotFoundException extends RuntimeException {
     public VehicleNotFoundException(UUID vehicleId) {
         super("Vehicle " + vehicleId + " was not found");
     }
+
+    public VehicleNotFoundException(String message) {
+        super(message);
+    }
 }

@@ -4,6 +4,11 @@ public record CreateVehicleCommand(
         String vin,
         String make,
         String model,
-        Integer year
+        String generation,
+        Integer year,
+        String engine,
+        String transmission,
+        String trim,
+        String market
 ) {
 }
