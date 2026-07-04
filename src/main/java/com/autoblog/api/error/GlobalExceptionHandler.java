@@ -3,10 +3,16 @@ package com.autoblog.api.error;
 import com.autoblog.application.DuplicateVinException;
 import com.autoblog.application.InvalidVinException;
 import com.autoblog.application.VehicleNotFoundException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -90,7 +96,24 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException exception,
             HttpServletRequest request
     ) {
-        return build(HttpStatus.BAD_REQUEST, "Request body is invalid", request, List.of());
+        Throwable cause = exception.getMostSpecificCause();
+        if (cause instanceof InvalidFormatException invalidFormatException) {
+            return handleInvalidFormat(invalidFormatException, request);
+        }
+        if (cause instanceof MismatchedInputException mismatchedInputException) {
+            return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                    new FieldErrorDetail(fieldPath(mismatchedInputException), "Invalid JSON value for this field")
+            ));
+        }
+        if (cause instanceof JsonParseException) {
+            return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                    new FieldErrorDetail("body", "Malformed JSON request body")
+            ));
+        }
+
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail("body", "Request body is invalid or missing")
+        ));
     }
 
     @ExceptionHandler(Exception.class)
@@ -112,5 +135,40 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(),
                 details
         ));
+    }
+
+    private ResponseEntity<ApiErrorResponse> handleInvalidFormat(
+            InvalidFormatException exception,
+            HttpServletRequest request
+    ) {
+        Class<?> targetType = exception.getTargetType();
+        if (targetType != null && targetType.isEnum()) {
+            return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                    new FieldErrorDetail(
+                            fieldPath(exception),
+                            unsupportedEnumMessage(exception.getValue(), targetType)
+                    )
+            ));
+        }
+
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(fieldPath(exception), "Invalid value: " + exception.getValue())
+        ));
+    }
+
+    private String unsupportedEnumMessage(Object value, Class<?> enumType) {
+        String supportedValues = Arrays.stream(enumType.getEnumConstants())
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        return "Unsupported event type: " + value + ". Supported values: " + supportedValues;
+    }
+
+    private String fieldPath(JsonMappingException exception) {
+        String path = exception.getPath().stream()
+                .map(reference -> reference.getFieldName() != null
+                        ? reference.getFieldName()
+                        : "[" + reference.getIndex() + "]")
+                .collect(Collectors.joining("."));
+        return path.isBlank() ? "body" : path;
     }
 }

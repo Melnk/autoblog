@@ -4,11 +4,15 @@ import com.autoblog.api.dto.CreateVehicleRequest;
 import com.autoblog.api.dto.VehicleResponse;
 import com.autoblog.application.CreateVehicleCommand;
 import com.autoblog.application.VehicleApplicationService;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.UUID;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +35,32 @@ public class VehicleController {
     }
 
     @PostMapping
-    @Operation(summary = "Create a vehicle")
+    @Operation(
+            summary = "Create a vehicle",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = CreateVehicleRequest.class),
+                            examples = @ExampleObject(
+                                    name = "Lada Priora",
+                                    value = """
+                                            {
+                                              "vin": "XTA217030C0000000",
+                                              "make": "Lada",
+                                              "model": "Priora",
+                                              "generation": "2170",
+                                              "year": 2012,
+                                              "engine": "1.6",
+                                              "transmission": "MT",
+                                              "trim": "Norma",
+                                              "market": "RU"
+                                            }
+                                            """
+                            )
+                    )
+            )
+    )
     public ResponseEntity<VehicleResponse> createVehicle(@Valid @RequestBody CreateVehicleRequest request) {
         var view = vehicles.createVehicle(new CreateVehicleCommand(
                 request.vin(),

@@ -25,6 +25,19 @@ The local database uses:
 - password: `autoblog`
 - port: `5432`
 
+Open psql:
+
+```bash
+docker compose exec postgres psql -U autoblog -d autoblog
+```
+
+Useful psql commands:
+
+```text
+\dt
+\q
+```
+
 ## Run Tests
 
 ```bash
@@ -44,6 +57,52 @@ Swagger UI:
 ```text
 http://localhost:8080/swagger-ui.html
 ```
+
+## API Contract
+
+Vehicle events require:
+
+- `type`
+- `eventDate`
+- `title`
+
+Canonical queryable event fields must be sent top-level:
+
+- `odometerKm`
+- `costAmount`
+- `costCurrency`
+- `serviceName`
+
+`payload` is extension data only for event-specific details.
+
+Correct:
+
+```json
+{
+  "odometerKm": 120000,
+  "costAmount": 5000,
+  "costCurrency": "RUB",
+  "serviceName": "Гаражный сервис",
+  "payload": {
+    "oil": "5W-40",
+    "parts": ["oil_filter"]
+  }
+}
+```
+
+Avoid:
+
+```json
+{
+  "payload": {
+    "mileageKm": 120000,
+    "cost": 5000,
+    "currency": "RUB"
+  }
+}
+```
+
+Reason: AutoBlog needs top-level canonical fields for analytics, ownership cost, timeline filtering, trust scoring, and future marketplace integrations.
 
 ## Example API Calls
 
@@ -65,6 +124,12 @@ curl -X POST http://localhost:8080/api/v1/vehicles \
   }'
 ```
 
+Get vehicle by id:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}
+```
+
 Get vehicle by VIN:
 
 ```bash
@@ -78,11 +143,11 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "MAINTENANCE",
-    "eventDate": "2026-06-28",
-    "odometerKm": 180000,
+    "eventDate": "2026-07-02",
+    "odometerKm": 120000,
     "title": "Замена масла",
     "description": "Масло 5W-40, масляный фильтр",
-    "costAmount": 4500,
+    "costAmount": 5000,
     "costCurrency": "RUB",
     "serviceName": "Гаражный сервис",
     "payload": {
@@ -92,11 +157,48 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
   }'
 ```
 
+Add repair event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "REPAIR",
+    "eventDate": "2026-07-10",
+    "odometerKm": 120500,
+    "title": "Замена передних тормозных колодок",
+    "description": "Заменены передние тормозные колодки",
+    "costAmount": 3500,
+    "costCurrency": "RUB",
+    "serviceName": "Гаражный сервис",
+    "payload": {
+      "parts": ["front_brake_pads"]
+    }
+  }'
+```
+
 Get vehicle events:
 
 ```bash
 curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events
 ```
+
+## Database Checks
+
+The public API returns `year`, but the PostgreSQL column is `model_year`.
+
+```sql
+SELECT id, vin, make, model, model_year, market, created_at, updated_at
+FROM vehicles;
+```
+
+```sql
+SELECT vehicle_id, sequence_number, event_type, event_date, previous_event_hash, event_hash
+FROM vehicle_events
+ORDER BY vehicle_id, sequence_number;
+```
+
+For the second event, `previous_event_hash` should equal the first event's `event_hash`.
 
 ## API
 
