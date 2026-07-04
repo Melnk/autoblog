@@ -1,10 +1,12 @@
 package com.autoblog.publicreport.api.dto;
 
 import com.autoblog.application.VehicleEventType;
+import com.autoblog.attachment.api.dto.PublicAttachmentResponse;
 import com.autoblog.publicreport.application.PublicReportEventView;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 public record PublicReportEventResponse(
         long sequenceNumber,
@@ -18,7 +20,8 @@ public record PublicReportEventResponse(
         String serviceName,
         JsonNode payload,
         String previousEventHash,
-        String eventHash
+        String eventHash,
+        List<PublicAttachmentResponse> attachments
 ) {
     public static PublicReportEventResponse from(PublicReportEventView view) {
         return new PublicReportEventResponse(
@@ -33,7 +36,10 @@ public record PublicReportEventResponse(
                 view.serviceName(),
                 view.payload(),
                 view.previousEventHash(),
-                view.eventHash()
+                view.eventHash(),
+                view.attachments().stream()
+                        .map(PublicAttachmentResponse::from)
+                        .toList()
         );
     }
 }

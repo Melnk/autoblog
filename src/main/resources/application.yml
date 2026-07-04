@@ -9,6 +9,10 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 server:
   error:
@@ -23,3 +27,7 @@ springdoc:
 
 autoblog:
   public-base-url:
+  storage:
+    local-root: ./data/uploads
+  attachments:
+    max-file-size-mb: 10

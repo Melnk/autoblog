@@ -1,5 +1,6 @@
 package com.autoblog.publicreport.api;
 
+import com.autoblog.attachment.application.AttachmentContentView;
 import com.autoblog.publicreport.api.dto.PublicVehicleReportResponse;
 import com.autoblog.publicreport.application.PublicVehicleReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -8,6 +9,10 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -81,7 +86,19 @@ public class PublicReportController {
                                             "parts": ["oil_filter"]
                                           },
                                           "previousEventHash": null,
-                                          "eventHash": "hash"
+                                          "eventHash": "hash",
+                                          "attachments": [
+                                            {
+                                              "id": "attachment-uuid",
+                                              "type": "RECEIPT",
+                                              "originalFilename": "receipt.pdf",
+                                              "contentType": "application/pdf",
+                                              "sizeBytes": 12345,
+                                              "checksumSha256": "sha256",
+                                              "description": "Чек за замену масла",
+                                              "downloadUrl": "/api/v1/public/reports/safe-random-token/attachments/attachment-uuid"
+                                            }
+                                          ]
                                         }
                                       ]
                                     }
@@ -109,5 +126,29 @@ public class PublicReportController {
         return ResponseEntity.ok()
                 .contentType(SVG_MEDIA_TYPE)
                 .body(publicReports.getQrSvg(publicToken));
+    }
+
+    @GetMapping("/{publicToken}/attachments/{attachmentId}")
+    @Operation(
+            summary = "Download a public report attachment",
+            description = "Downloads a PUBLIC attachment that belongs to the report vehicle.",
+            responses = @ApiResponse(
+                    responseCode = "200",
+                    description = "Attachment bytes",
+                    content = @Content(mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+            )
+    )
+    public ResponseEntity<byte[]> downloadPublicAttachment(
+            @PathVariable String publicToken,
+            @PathVariable UUID attachmentId
+    ) {
+        AttachmentContentView content = publicReports.downloadPublicAttachment(publicToken, attachmentId);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.inline()
+                        .filename(content.originalFilename(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .body(content.content());
     }
 }

@@ -2,6 +2,9 @@ package com.autoblog.publicreport.application;
 
 import com.autoblog.application.CanonicalJsonService;
 import com.autoblog.application.VehicleNotFoundException;
+import com.autoblog.attachment.application.AttachmentContentView;
+import com.autoblog.attachment.application.EventAttachmentService;
+import com.autoblog.attachment.application.PublicAttachmentView;
 import com.autoblog.infrastructure.persistence.VehicleEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
@@ -14,7 +17,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +36,7 @@ public class PublicVehicleReportService {
     private final VehicleHashChainVerifier hashChainVerifier;
     private final CanonicalJsonService canonicalJsonService;
     private final QrCodeSvgService qrCodeSvgService;
+    private final EventAttachmentService attachments;
 
     public PublicVehicleReportService(
             PublicVehicleReportJpaRepository reports,
@@ -40,7 +46,8 @@ public class PublicVehicleReportService {
             PublicReportUrlService urlService,
             VehicleHashChainVerifier hashChainVerifier,
             CanonicalJsonService canonicalJsonService,
-            QrCodeSvgService qrCodeSvgService
+            QrCodeSvgService qrCodeSvgService,
+            EventAttachmentService attachments
     ) {
         this.reports = reports;
         this.vehicles = vehicles;
@@ -50,6 +57,7 @@ public class PublicVehicleReportService {
         this.hashChainVerifier = hashChainVerifier;
         this.canonicalJsonService = canonicalJsonService;
         this.qrCodeSvgService = qrCodeSvgService;
+        this.attachments = attachments;
     }
 
     @Transactional
@@ -70,12 +78,21 @@ public class PublicVehicleReportService {
         PublicVehicleReportEntity report = findActiveReport(publicToken);
         VehicleEntity vehicle = report.getVehicle();
         List<VehicleEventEntity> eventEntities = events.findByVehicle_IdOrderBySequenceNumberAsc(vehicle.getId());
+        Map<UUID, List<PublicAttachmentView>> attachmentsByEventId = attachments
+                .publicAttachments(eventEntities.stream().map(VehicleEventEntity::getId).toList(), publicToken)
+                .stream()
+                .collect(Collectors.groupingBy(PublicAttachmentView::eventId));
 
         return new PublicVehicleReportView(
                 toInfoView(report),
                 toPublicVehicleView(vehicle),
                 summary(eventEntities),
-                eventEntities.stream().map(this::toPublicEventView).toList()
+                eventEntities.stream()
+                        .map(event -> toPublicEventView(
+                                event,
+                                attachmentsByEventId.getOrDefault(event.getId(), List.of())
+                        ))
+                        .toList()
         );
     }
 
@@ -83,6 +100,12 @@ public class PublicVehicleReportService {
     public String getQrSvg(String publicToken) {
         findActiveReport(publicToken);
         return qrCodeSvgService.createSvg(urlService.publicReportUrl(publicToken));
+    }
+
+    @Transactional(readOnly = true)
+    public AttachmentContentView downloadPublicAttachment(String publicToken, UUID attachmentId) {
+        PublicVehicleReportEntity report = findActiveReport(publicToken);
+        return attachments.downloadPublic(report.getVehicle().getId(), attachmentId);
     }
 
     private VehicleEntity findVehicle(UUID vehicleId) {
@@ -139,7 +162,10 @@ public class PublicVehicleReportService {
         );
     }
 
-    private PublicReportEventView toPublicEventView(VehicleEventEntity event) {
+    private PublicReportEventView toPublicEventView(
+            VehicleEventEntity event,
+            List<PublicAttachmentView> attachments
+    ) {
         return new PublicReportEventView(
                 event.getSequenceNumber(),
                 event.getType(),
@@ -152,7 +178,8 @@ public class PublicVehicleReportService {
                 event.getServiceName(),
                 canonicalJsonService.parse(event.getPayload()),
                 event.getPreviousEventHash(),
-                event.getEventHash()
+                event.getEventHash(),
+                attachments
         );
     }
 

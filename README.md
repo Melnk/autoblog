@@ -273,6 +273,66 @@ curl http://localhost:8080/api/v1/public/reports/{publicToken}/qr
 
 The QR endpoint returns `image/svg+xml`. By default the QR encodes `/api/v1/public/reports/{publicToken}`. Set `autoblog.public-base-url` to encode an absolute public URL.
 
+## Event Evidence / Attachments
+
+Attachments are evidence for a specific vehicle event: repair photos, before/after photos, receipts, work orders, diagnostics PDFs, and part photos.
+
+`payload` is not for files. Put structured event details in `payload`, and upload files through attachment endpoints. `PRIVATE` is the default visibility. Only `PUBLIC` attachments appear in public vehicle reports.
+
+Allowed content types:
+
+- `image/jpeg`
+- `image/png`
+- `image/webp`
+- `application/pdf`
+
+Local files are stored under `./data/uploads` by default. This local storage is temporary and intentionally isolated behind an `AttachmentStorage` abstraction so it can be replaced with S3/MinIO later.
+
+Upload a public receipt PDF to the first event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments \
+  -F 'file=@./receipt.pdf;type=application/pdf' \
+  -F 'type=RECEIPT' \
+  -F 'visibility=PUBLIC' \
+  -F 'description=Чек за замену масла'
+```
+
+Upload a private photo to the first event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments \
+  -F 'file=@./repair-photo.png;type=image/png' \
+  -F 'type=PHOTO' \
+  -F 'description=Фото после ремонта'
+```
+
+List event attachments:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments
+```
+
+Download an internal attachment:
+
+```bash
+curl -L -o receipt.pdf \
+  http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download
+```
+
+Get the public report and check that only `PUBLIC` attachments appear:
+
+```bash
+curl http://localhost:8080/api/v1/public/reports/{publicToken}
+```
+
+Download a public attachment from the public report:
+
+```bash
+curl -L -o public-receipt.pdf \
+  http://localhost:8080/api/v1/public/reports/{publicToken}/attachments/{attachmentId}
+```
+
 ## Database Checks
 
 The public API returns `year`, but the PostgreSQL column is `model_year`.
@@ -290,6 +350,12 @@ ORDER BY vehicle_id, sequence_number;
 
 For the second event, `previous_event_hash` should equal the first event's `event_hash`.
 
+```sql
+SELECT vehicle_id, event_id, type, visibility, original_filename, content_type, size_bytes, checksum_sha256, created_at
+FROM event_attachments
+ORDER BY created_at;
+```
+
 ## API
 
 - `POST /api/v1/vehicles`
@@ -297,8 +363,12 @@ For the second event, `previous_event_hash` should equal the first event's `even
 - `GET /api/v1/vehicles/by-vin/{vin}`
 - `POST /api/v1/vehicles/{vehicleId}/events`
 - `GET /api/v1/vehicles/{vehicleId}/events`
+- `POST /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
+- `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
+- `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download`
 - `POST /api/v1/vehicles/{vehicleId}/public-report`
 - `GET /api/v1/public/reports/{publicToken}`
 - `GET /api/v1/public/reports/{publicToken}/qr`
+- `GET /api/v1/public/reports/{publicToken}/attachments/{attachmentId}`
 
 Vehicle events are append-only. There are no update or delete endpoints for vehicle events in this stage.

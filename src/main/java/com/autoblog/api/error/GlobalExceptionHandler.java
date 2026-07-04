@@ -2,7 +2,10 @@ package com.autoblog.api.error;
 
 import com.autoblog.application.DuplicateVinException;
 import com.autoblog.application.InvalidVinException;
+import com.autoblog.application.VehicleEventNotFoundException;
 import com.autoblog.application.VehicleNotFoundException;
+import com.autoblog.attachment.domain.AttachmentNotFoundException;
+import com.autoblog.attachment.domain.InvalidAttachmentException;
 import com.autoblog.publicreport.domain.PublicReportNotFoundException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -18,9 +21,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
@@ -62,6 +68,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
     }
 
+    @ExceptionHandler({
+            VehicleEventNotFoundException.class,
+            AttachmentNotFoundException.class
+    })
+    public ResponseEntity<ApiErrorResponse> handleDomainNotFound(RuntimeException exception, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
+    }
+
     @ExceptionHandler(DuplicateVinException.class)
     public ResponseEntity<ApiErrorResponse> handleDuplicateVin(
             DuplicateVinException exception,
@@ -98,8 +112,55 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException exception,
             HttpServletRequest request
     ) {
+        Class<?> requiredType = exception.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                    new FieldErrorDetail(
+                            exception.getName(),
+                            unsupportedEnumMessage(exception.getValue(), requiredType)
+                    )
+            ));
+        }
+
         return build(HttpStatus.BAD_REQUEST, "Request parameter is invalid", request, List.of(
                 new FieldErrorDetail(exception.getName(), "Invalid value")
+        ));
+    }
+
+    @ExceptionHandler(InvalidAttachmentException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidAttachment(
+            InvalidAttachmentException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getField(), exception.getMessage())
+        ));
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingPart(
+            MissingServletRequestPartException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getRequestPartName(), "Required multipart part is missing")
+        ));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingParameter(
+            MissingServletRequestParameterException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getParameterName(), "Required request parameter is missing")
+        ));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiErrorResponse> handleMultipartException(MultipartException exception, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail("file", "Multipart request is invalid")
         ));
     }
 
@@ -188,7 +249,16 @@ public class GlobalExceptionHandler {
         String supportedValues = Arrays.stream(enumType.getEnumConstants())
                 .map(Object::toString)
                 .collect(Collectors.joining(", "));
-        return "Unsupported event type: " + value + ". Supported values: " + supportedValues;
+        return "Unsupported " + enumLabel(enumType) + ": " + value + ". Supported values: " + supportedValues;
+    }
+
+    private String enumLabel(Class<?> enumType) {
+        return switch (enumType.getSimpleName()) {
+            case "VehicleEventType" -> "event type";
+            case "AttachmentType" -> "attachment type";
+            case "AttachmentVisibility" -> "attachment visibility";
+            default -> "value";
+        };
     }
 
     private String fieldPath(JsonMappingException exception) {

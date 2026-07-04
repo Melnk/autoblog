@@ -6,3 +6,7 @@ spring:
     password:
   jpa:
     show-sql: false
+
+autoblog:
+  storage:
+    local-root: ./target/test-uploads

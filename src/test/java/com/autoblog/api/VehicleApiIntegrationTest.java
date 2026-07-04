@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autoblog.attachment.infrastructure.EventAttachmentJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
@@ -91,8 +92,12 @@ class VehicleApiIntegrationTest {
     @Autowired
     private PublicVehicleReportJpaRepository publicReports;
 
+    @Autowired
+    private EventAttachmentJpaRepository attachments;
+
     @BeforeEach
     void cleanDatabase() {
+        attachments.deleteAll();
         publicReports.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();
