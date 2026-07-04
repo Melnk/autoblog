@@ -14,7 +14,10 @@ AutoBlog is a Spring Boot backend for vehicle-centric digital history. The main 
 
 ## Start PostgreSQL
 
+Run Docker Compose commands from the project root where `docker-compose.yml` exists:
+
 ```bash
+cd autoblog
 docker compose --profile local up -d postgres
 ```
 

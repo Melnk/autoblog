@@ -131,6 +131,7 @@ class PublicVehicleReportIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.report.publicToken").value(metadata.get("publicToken").asText()))
                 .andExpect(jsonPath("$.report.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.report.id").doesNotExist())
                 .andExpect(jsonPath("$.vehicle.vin").value("XTA217030C0000000"))
                 .andExpect(jsonPath("$.vehicle.make").value("Lada"))
                 .andExpect(jsonPath("$.vehicle.id").doesNotExist())

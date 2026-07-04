@@ -140,6 +140,20 @@ class VehicleApiIntegrationTest {
     }
 
     @Test
+    void emptyVehiclePathVariableReturnsNotFoundInsteadOfServerError() throws Exception {
+        mockMvc.perform(get("/api/v1/vehicles/"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    void emptyVehiclePathVariableForEventsReturnsBadRequestInsteadOfServerError() throws Exception {
+        mockMvc.perform(get("/api/v1/vehicles//events"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
     void getsVehicleById() throws Exception {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 

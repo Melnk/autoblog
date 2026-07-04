@@ -40,7 +40,6 @@ public class PublicReportController {
                             examples = @ExampleObject(value = """
                                     {
                                       "report": {
-                                        "id": "11111111-1111-1111-1111-111111111111",
                                         "publicToken": "safe-random-token",
                                         "status": "ACTIVE",
                                         "createdAt": "2026-07-04T12:00:00Z",
