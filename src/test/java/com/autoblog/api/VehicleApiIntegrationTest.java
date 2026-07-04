@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
+import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -87,8 +88,12 @@ class VehicleApiIntegrationTest {
     @Autowired
     private VehicleEventJpaRepository events;
 
+    @Autowired
+    private PublicVehicleReportJpaRepository publicReports;
+
     @BeforeEach
     void cleanDatabase() {
+        publicReports.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();
     }

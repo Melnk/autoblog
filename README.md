@@ -183,6 +183,93 @@ Get vehicle events:
 curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events
 ```
 
+## Public Vehicle Report
+
+A public vehicle report is a public-safe, shareable vehicle history report. It is intended for sharing with a buyer through a link or QR code when the vehicle is being sold.
+
+The public report does not expose owner/user data. Public vehicle data does not include the internal vehicle UUID, and public event data does not include internal event UUIDs.
+
+1. Create vehicle:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "vin": "XTA217030C0000000",
+    "make": "Lada",
+    "model": "Priora",
+    "generation": "2170",
+    "year": 2012,
+    "engine": "1.6",
+    "transmission": "MT",
+    "trim": "Norma",
+    "market": "RU"
+  }'
+```
+
+2. Add first event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "MAINTENANCE",
+    "eventDate": "2026-07-02",
+    "odometerKm": 120000,
+    "title": "Замена масла",
+    "description": "Масло 5W-40, масляный фильтр",
+    "costAmount": 5000,
+    "costCurrency": "RUB",
+    "serviceName": "Гаражный сервис",
+    "payload": {
+      "oil": "5W-40",
+      "parts": ["oil_filter"]
+    }
+  }'
+```
+
+3. Add second event:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "REPAIR",
+    "eventDate": "2026-07-10",
+    "odometerKm": 120500,
+    "title": "Замена передних тормозных колодок",
+    "description": "Заменены передние тормозные колодки",
+    "costAmount": 3500,
+    "costCurrency": "RUB",
+    "serviceName": "Гаражный сервис",
+    "payload": {
+      "parts": ["front_brake_pads"]
+    }
+  }'
+```
+
+4. Create or get the active public report:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report
+```
+
+Response contains `publicToken` and `publicUrl`. Calling the same endpoint again returns the same active report instead of creating duplicates.
+
+5. Get public report by token:
+
+```bash
+curl http://localhost:8080/api/v1/public/reports/{publicToken}
+```
+
+6. Get QR SVG:
+
+```bash
+curl http://localhost:8080/api/v1/public/reports/{publicToken}/qr
+```
+
+The QR endpoint returns `image/svg+xml`. By default the QR encodes `/api/v1/public/reports/{publicToken}`. Set `autoblog.public-base-url` to encode an absolute public URL.
+
 ## Database Checks
 
 The public API returns `year`, but the PostgreSQL column is `model_year`.
@@ -207,5 +294,8 @@ For the second event, `previous_event_hash` should equal the first event's `even
 - `GET /api/v1/vehicles/by-vin/{vin}`
 - `POST /api/v1/vehicles/{vehicleId}/events`
 - `GET /api/v1/vehicles/{vehicleId}/events`
+- `POST /api/v1/vehicles/{vehicleId}/public-report`
+- `GET /api/v1/public/reports/{publicToken}`
+- `GET /api/v1/public/reports/{publicToken}/qr`
 
 Vehicle events are append-only. There are no update or delete endpoints for vehicle events in this stage.

@@ -3,6 +3,7 @@ package com.autoblog.api.error;
 import com.autoblog.application.DuplicateVinException;
 import com.autoblog.application.InvalidVinException;
 import com.autoblog.application.VehicleNotFoundException;
+import com.autoblog.publicreport.domain.PublicReportNotFoundException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -45,6 +46,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(VehicleNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
             VehicleNotFoundException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(PublicReportNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handlePublicReportNotFound(
+            PublicReportNotFoundException exception,
             HttpServletRequest request
     ) {
         return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
