@@ -10,3 +10,6 @@ spring:
 autoblog:
   storage:
     local-root: ./target/test-uploads
+  security:
+    jwt-secret: test-development-secret-for-autoblog-integration-tests
+    jwt-ttl-minutes: 60

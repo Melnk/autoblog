@@ -1,11 +1,18 @@
 package com.autoblog.api.error;
 
+import com.autoblog.access.application.InvalidVehicleAccessException;
+import com.autoblog.access.application.VehicleAccessDeniedException;
+import com.autoblog.access.application.VehicleAccessNotFoundException;
 import com.autoblog.application.DuplicateVinException;
 import com.autoblog.application.InvalidVinException;
 import com.autoblog.application.VehicleEventNotFoundException;
 import com.autoblog.application.VehicleNotFoundException;
 import com.autoblog.attachment.domain.AttachmentNotFoundException;
 import com.autoblog.attachment.domain.InvalidAttachmentException;
+import com.autoblog.identity.application.DuplicateEmailException;
+import com.autoblog.identity.application.InvalidAuthRequestException;
+import com.autoblog.identity.application.InvalidCredentialsException;
+import com.autoblog.identity.application.UserAccountNotFoundException;
 import com.autoblog.publicreport.domain.PublicReportNotFoundException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -70,10 +77,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({
             VehicleEventNotFoundException.class,
-            AttachmentNotFoundException.class
+            AttachmentNotFoundException.class,
+            VehicleAccessNotFoundException.class,
+            UserAccountNotFoundException.class
     })
     public ResponseEntity<ApiErrorResponse> handleDomainNotFound(RuntimeException exception, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
+            InvalidCredentialsException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.UNAUTHORIZED, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidAuthRequestException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidAuthRequest(
+            InvalidAuthRequestException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getField(), exception.getMessage())
+        ));
     }
 
     @ExceptionHandler(DuplicateVinException.class)
@@ -82,6 +109,30 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.CONFLICT, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(DuplicateEmailException.class)
+    public ResponseEntity<ApiErrorResponse> handleDuplicateEmail(
+            DuplicateEmailException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(VehicleAccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleVehicleAccessDenied(
+            VehicleAccessDeniedException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.FORBIDDEN, exception.getMessage(), request, List.of());
+    }
+
+    @ExceptionHandler(InvalidVehicleAccessException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidVehicleAccess(
+            InvalidVehicleAccessException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, exception.getMessage(), request, List.of());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

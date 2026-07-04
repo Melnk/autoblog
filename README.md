@@ -55,6 +55,8 @@ Tests use the `test` profile and an in-memory H2 database with Flyway migrations
 mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
+The `local` profile contains a development JWT secret. For non-local environments set `AUTOBLOG_JWT_SECRET` and optionally `AUTOBLOG_JWT_TTL_MINUTES`.
+
 Swagger UI:
 
 ```text
@@ -107,12 +109,59 @@ Avoid:
 
 Reason: AutoBlog needs top-level canonical fields for analytics, ownership cost, timeline filtering, trust scoring, and future marketplace integrations.
 
+## Authentication
+
+Private vehicle APIs require a stateless JWT access token:
+
+```text
+Authorization: Bearer <token>
+```
+
+Public report read endpoints do not require authentication.
+
+Register a user:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "owner@example.com",
+    "password": "StrongPassword123!",
+    "displayName": "Owner"
+  }'
+```
+
+Login:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "owner@example.com",
+    "password": "StrongPassword123!"
+  }'
+```
+
+Store the access token:
+
+```bash
+TOKEN="<accessToken>"
+```
+
+Get the current user:
+
+```bash
+curl http://localhost:8080/api/v1/auth/me \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 ## Example API Calls
 
 Create vehicle:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "vin": "XTA217030C0000000",
@@ -130,19 +179,22 @@ curl -X POST http://localhost:8080/api/v1/vehicles \
 Get vehicle by id:
 
 ```bash
-curl http://localhost:8080/api/v1/vehicles/{vehicleId}
+curl http://localhost:8080/api/v1/vehicles/{vehicleId} \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Get vehicle by VIN:
 
 ```bash
-curl http://localhost:8080/api/v1/vehicles/by-vin/XTA217030C0000000
+curl http://localhost:8080/api/v1/vehicles/by-vin/XTA217030C0000000 \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Add maintenance event:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "MAINTENANCE",
@@ -164,6 +216,7 @@ Add repair event:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "REPAIR",
@@ -183,7 +236,15 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
 Get vehicle events:
 
 ```bash
-curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+List vehicles current user can access:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Public Vehicle Report
@@ -196,6 +257,7 @@ The public report does not expose owner/user data. Public vehicle data does not 
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "vin": "XTA217030C0000000",
@@ -214,6 +276,7 @@ curl -X POST http://localhost:8080/api/v1/vehicles \
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "MAINTENANCE",
@@ -235,6 +298,7 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "REPAIR",
@@ -254,7 +318,8 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
 4. Create or get the active public report:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Response contains `publicToken` and `publicUrl`. Calling the same endpoint again returns the same active report instead of creating duplicates.
@@ -292,6 +357,7 @@ Upload a public receipt PDF to the first event:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments \
+  -H "Authorization: Bearer $TOKEN" \
   -F 'file=@./receipt.pdf;type=application/pdf' \
   -F 'type=RECEIPT' \
   -F 'visibility=PUBLIC' \
@@ -302,6 +368,7 @@ Upload a private photo to the first event:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments \
+  -H "Authorization: Bearer $TOKEN" \
   -F 'file=@./repair-photo.png;type=image/png' \
   -F 'type=PHOTO' \
   -F 'description=Фото после ремонта'
@@ -310,13 +377,15 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/
 List event attachments:
 
 ```bash
-curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Download an internal attachment:
 
 ```bash
 curl -L -o receipt.pdf \
+  -H "Authorization: Bearer $TOKEN" \
   http://localhost:8080/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download
 ```
 
@@ -332,6 +401,83 @@ Download a public attachment from the public report:
 curl -L -o public-receipt.pdf \
   http://localhost:8080/api/v1/public/reports/{publicToken}/attachments/{attachmentId}
 ```
+
+## Vehicle Access Control
+
+When a user creates a vehicle, AutoBlog grants that user `OWNER` access automatically.
+
+Roles:
+
+- `OWNER`: can read, modify history, create public reports, and manage access.
+- `EDITOR`: can read, modify history, and create public reports.
+- `VIEWER`: can read private vehicle data but cannot modify history or manage access.
+
+Register another user before granting access:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "editor@example.com",
+    "password": "StrongPassword123!",
+    "displayName": "Editor"
+  }'
+```
+
+Grant access uses the target user's `email`, not `userId`. The target user must already exist. Use `userId` only in the revoke path after listing current access rows.
+
+Grant `EDITOR` access to an existing user:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/access \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "editor@example.com",
+    "role": "EDITOR"
+  }'
+```
+
+Grant `VIEWER` access:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/access \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "email": "viewer@example.com",
+    "role": "VIEWER"
+  }'
+```
+
+List vehicle access:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/access \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Revoke access:
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/vehicles/{vehicleId}/access/{userId} \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+A `VIEWER` token can list events but cannot add events:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $VIEWER_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "MAINTENANCE",
+    "eventDate": "2026-07-02",
+    "title": "Viewer attempt"
+  }'
+```
+
+This returns `403 Forbidden`.
 
 ## Database Checks
 
@@ -356,9 +502,24 @@ FROM event_attachments
 ORDER BY created_at;
 ```
 
+```sql
+SELECT id, email, display_name, status, created_at, updated_at
+FROM user_accounts;
+```
+
+```sql
+SELECT vehicle_id, user_id, role, created_at
+FROM vehicle_access
+ORDER BY vehicle_id, created_at;
+```
+
 ## API
 
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `GET /api/v1/auth/me`
 - `POST /api/v1/vehicles`
+- `GET /api/v1/vehicles`
 - `GET /api/v1/vehicles/{vehicleId}`
 - `GET /api/v1/vehicles/by-vin/{vin}`
 - `POST /api/v1/vehicles/{vehicleId}/events`
@@ -367,6 +528,9 @@ ORDER BY created_at;
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download`
 - `POST /api/v1/vehicles/{vehicleId}/public-report`
+- `POST /api/v1/vehicles/{vehicleId}/access`
+- `GET /api/v1/vehicles/{vehicleId}/access`
+- `DELETE /api/v1/vehicles/{vehicleId}/access/{userId}`
 - `GET /api/v1/public/reports/{publicToken}`
 - `GET /api/v1/public/reports/{publicToken}/qr`
 - `GET /api/v1/public/reports/{publicToken}/attachments/{attachmentId}`

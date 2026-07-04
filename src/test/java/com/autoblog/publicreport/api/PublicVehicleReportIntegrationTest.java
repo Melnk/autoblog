@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autoblog.access.infrastructure.VehicleAccessJpaRepository;
 import com.autoblog.attachment.infrastructure.EventAttachmentJpaRepository;
+import com.autoblog.identity.infrastructure.UserAccountJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
@@ -20,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -94,12 +97,23 @@ class PublicVehicleReportIntegrationTest {
     @Autowired
     private EventAttachmentJpaRepository attachments;
 
+    @Autowired
+    private VehicleAccessJpaRepository vehicleAccess;
+
+    @Autowired
+    private UserAccountJpaRepository users;
+
+    private String ownerToken;
+
     @BeforeEach
-    void cleanDatabase() {
+    void cleanDatabase() throws Exception {
         attachments.deleteAll();
         publicReports.deleteAll();
+        vehicleAccess.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();
+        users.deleteAll();
+        ownerToken = register("owner@example.com");
     }
 
     @Test
@@ -166,7 +180,8 @@ class PublicVehicleReportIntegrationTest {
 
     @Test
     void unknownVehicleReturnsNotFoundWhenCreatingPublicReport() throws Exception {
-        mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", "11111111-1111-1111-1111-111111111111"))
+        mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", "11111111-1111-1111-1111-111111111111")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -189,6 +204,7 @@ class PublicVehicleReportIntegrationTest {
 
     private String createVehicle() throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VEHICLE_REQUEST))
                 .andExpect(status().isCreated())
@@ -201,6 +217,7 @@ class PublicVehicleReportIntegrationTest {
 
     private JsonNode addEvent(String vehicleId, String requestBody) throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -212,12 +229,35 @@ class PublicVehicleReportIntegrationTest {
     }
 
     private JsonNode createPublicReport(String vehicleId) throws Exception {
-        String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", vehicleId))
+        String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString(StandardCharsets.UTF_8);
 
         return objectMapper.readTree(response);
+    }
+
+    private String register(String email) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "StrongPassword123!",
+                                  "displayName": "Owner"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        return objectMapper.readTree(response).get("accessToken").asText();
+    }
+
+    private String bearer(String token) {
+        return "Bearer " + token;
     }
 }

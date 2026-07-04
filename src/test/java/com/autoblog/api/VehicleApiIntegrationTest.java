@@ -8,7 +8,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autoblog.access.infrastructure.VehicleAccessJpaRepository;
 import com.autoblog.attachment.infrastructure.EventAttachmentJpaRepository;
+import com.autoblog.identity.infrastructure.UserAccountJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
@@ -21,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -95,17 +98,29 @@ class VehicleApiIntegrationTest {
     @Autowired
     private EventAttachmentJpaRepository attachments;
 
+    @Autowired
+    private VehicleAccessJpaRepository vehicleAccess;
+
+    @Autowired
+    private UserAccountJpaRepository users;
+
+    private String ownerToken;
+
     @BeforeEach
-    void cleanDatabase() {
+    void cleanDatabase() throws Exception {
         attachments.deleteAll();
         publicReports.deleteAll();
+        vehicleAccess.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();
+        users.deleteAll();
+        ownerToken = register("owner@example.com");
     }
 
     @Test
     void createsVehicleUsingReadmeJsonExample() throws Exception {
         mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(README_VEHICLE_REQUEST))
                 .andExpect(status().isCreated())
@@ -124,10 +139,18 @@ class VehicleApiIntegrationTest {
     }
 
     @Test
+    void protectedEndpointWithoutTokenReturnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/vehicles"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
     void duplicateVinReturnsConflict() throws Exception {
         createVehicle(README_VEHICLE_REQUEST);
 
         mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(README_VEHICLE_REQUEST))
                 .andExpect(status().isConflict())
@@ -138,6 +161,7 @@ class VehicleApiIntegrationTest {
     @Test
     void invalidVinWithForbiddenCharacterReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(README_VEHICLE_REQUEST.replace("XTA217030C0000000", "XTA217030O0000000")))
                 .andExpect(status().isBadRequest())
@@ -146,14 +170,16 @@ class VehicleApiIntegrationTest {
 
     @Test
     void emptyVehiclePathVariableReturnsNotFoundInsteadOfServerError() throws Exception {
-        mockMvc.perform(get("/api/v1/vehicles/"))
+        mockMvc.perform(get("/api/v1/vehicles/")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
     void emptyVehiclePathVariableForEventsReturnsBadRequestInsteadOfServerError() throws Exception {
-        mockMvc.perform(get("/api/v1/vehicles//events"))
+        mockMvc.perform(get("/api/v1/vehicles//events")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400));
     }
@@ -162,7 +188,8 @@ class VehicleApiIntegrationTest {
     void getsVehicleById() throws Exception {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
-        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}", vehicleId))
+        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(vehicleId))
                 .andExpect(jsonPath("$.vin").value("XTA217030C0000000"));
@@ -172,7 +199,8 @@ class VehicleApiIntegrationTest {
     void getsVehicleByVin() throws Exception {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
-        mockMvc.perform(get("/api/v1/vehicles/by-vin/{vin}", "xta217030c0000000"))
+        mockMvc.perform(get("/api/v1/vehicles/by-vin/{vin}", "xta217030c0000000")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(vehicleId))
                 .andExpect(jsonPath("$.vin").value("XTA217030C0000000"));
@@ -216,7 +244,8 @@ class VehicleApiIntegrationTest {
         JsonNode firstEvent = addEvent(vehicleId, README_MAINTENANCE_EVENT_REQUEST);
         JsonNode secondEvent = addEvent(vehicleId, README_REPAIR_EVENT_REQUEST);
 
-        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/events", vehicleId))
+        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(firstEvent.get("id").asText()))
                 .andExpect(jsonPath("$[0].sequenceNumber").value(1))
@@ -229,6 +258,7 @@ class VehicleApiIntegrationTest {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
         mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(README_MAINTENANCE_EVENT_REQUEST.replace("MAINTENANCE", "REGISTRATION")))
                 .andExpect(status().isBadRequest())
@@ -245,6 +275,7 @@ class VehicleApiIntegrationTest {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
         mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -264,6 +295,7 @@ class VehicleApiIntegrationTest {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
         mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -279,6 +311,7 @@ class VehicleApiIntegrationTest {
 
     private String createVehicle(String requestBody) throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -291,6 +324,7 @@ class VehicleApiIntegrationTest {
 
     private JsonNode addEvent(String vehicleId, String requestBody) throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBody))
                 .andExpect(status().isCreated())
@@ -299,5 +333,27 @@ class VehicleApiIntegrationTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         return objectMapper.readTree(response);
+    }
+
+    private String register(String email) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "StrongPassword123!",
+                                  "displayName": "Owner"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        return objectMapper.readTree(response).get("accessToken").asText();
+    }
+
+    private String bearer(String token) {
+        return "Bearer " + token;
     }
 }

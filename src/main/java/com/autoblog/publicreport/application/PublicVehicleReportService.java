@@ -1,5 +1,6 @@
 package com.autoblog.publicreport.application;
 
+import com.autoblog.access.application.VehicleAccessService;
 import com.autoblog.application.CanonicalJsonService;
 import com.autoblog.application.VehicleNotFoundException;
 import com.autoblog.attachment.application.AttachmentContentView;
@@ -37,6 +38,7 @@ public class PublicVehicleReportService {
     private final CanonicalJsonService canonicalJsonService;
     private final QrCodeSvgService qrCodeSvgService;
     private final EventAttachmentService attachments;
+    private final VehicleAccessService vehicleAccess;
 
     public PublicVehicleReportService(
             PublicVehicleReportJpaRepository reports,
@@ -47,7 +49,8 @@ public class PublicVehicleReportService {
             VehicleHashChainVerifier hashChainVerifier,
             CanonicalJsonService canonicalJsonService,
             QrCodeSvgService qrCodeSvgService,
-            EventAttachmentService attachments
+            EventAttachmentService attachments,
+            VehicleAccessService vehicleAccess
     ) {
         this.reports = reports;
         this.vehicles = vehicles;
@@ -58,10 +61,12 @@ public class PublicVehicleReportService {
         this.canonicalJsonService = canonicalJsonService;
         this.qrCodeSvgService = qrCodeSvgService;
         this.attachments = attachments;
+        this.vehicleAccess = vehicleAccess;
     }
 
     @Transactional
     public PublicReportMetadataView createOrGetActiveReport(UUID vehicleId) {
+        vehicleAccess.requireEditAccess(vehicleId);
         VehicleEntity vehicle = findVehicle(vehicleId);
         return reports.findByVehicle_IdAndStatus(vehicleId, PublicReportStatus.ACTIVE)
                 .map(this::toMetadataView)

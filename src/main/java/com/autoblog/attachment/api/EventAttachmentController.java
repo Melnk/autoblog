@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments")
 @Tag(name = "Event attachments")
+@SecurityRequirement(name = "bearerAuth")
 public class EventAttachmentController {
 
     private final EventAttachmentService attachments;

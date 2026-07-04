@@ -31,3 +31,6 @@ autoblog:
     local-root: ./data/uploads
   attachments:
     max-file-size-mb: 10
+  security:
+    jwt-secret: ${AUTOBLOG_JWT_SECRET:}
+    jwt-ttl-minutes: ${AUTOBLOG_JWT_TTL_MINUTES:60}

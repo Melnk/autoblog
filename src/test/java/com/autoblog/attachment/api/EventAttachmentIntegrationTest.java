@@ -9,8 +9,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.autoblog.access.infrastructure.VehicleAccessJpaRepository;
 import com.autoblog.attachment.application.AttachmentChecksumService;
 import com.autoblog.attachment.infrastructure.EventAttachmentJpaRepository;
+import com.autoblog.identity.infrastructure.UserAccountJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
@@ -23,11 +25,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder;
 
 @SpringBootTest
@@ -92,12 +94,23 @@ class EventAttachmentIntegrationTest {
     @Autowired
     private AttachmentChecksumService checksumService;
 
+    @Autowired
+    private VehicleAccessJpaRepository vehicleAccess;
+
+    @Autowired
+    private UserAccountJpaRepository users;
+
+    private String ownerToken;
+
     @BeforeEach
-    void cleanDatabase() {
+    void cleanDatabase() throws Exception {
         attachments.deleteAll();
         publicReports.deleteAll();
+        vehicleAccess.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();
+        users.deleteAll();
+        ownerToken = register("owner@example.com");
     }
 
     @Test
@@ -137,7 +150,8 @@ class EventAttachmentIntegrationTest {
         JsonNode first = uploadAttachment(vehicleId, eventId, "receipt.pdf", "application/pdf", PDF_BYTES, "RECEIPT", "PUBLIC");
         JsonNode second = uploadAttachment(vehicleId, eventId, "photo.png", "image/png", PNG_BYTES, "PHOTO", null);
 
-        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments", vehicleId, eventId))
+        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/events/{eventId}/attachments", vehicleId, eventId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].id").value(first.get("id").asText()))
@@ -155,7 +169,7 @@ class EventAttachmentIntegrationTest {
                         vehicleId,
                         eventId,
                         attachment.get("id").asText()
-                ))
+                ).header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/pdf"))
                 .andReturn()
@@ -238,12 +252,13 @@ class EventAttachmentIntegrationTest {
                         vehicleId,
                         eventId,
                         unknownId
-                ))
+                ).header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isNotFound());
     }
 
     private String createVehicle() throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(VEHICLE_REQUEST))
                 .andExpect(status().isCreated())
@@ -256,6 +271,7 @@ class EventAttachmentIntegrationTest {
 
     private String createEvent(String vehicleId) throws Exception {
         String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(MAINTENANCE_EVENT_REQUEST))
                 .andExpect(status().isCreated())
@@ -267,7 +283,8 @@ class EventAttachmentIntegrationTest {
     }
 
     private JsonNode createPublicReport(String vehicleId) throws Exception {
-        String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", vehicleId))
+        String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
@@ -310,6 +327,7 @@ class EventAttachmentIntegrationTest {
                 vehicleId,
                 eventId
         );
+        request.header(HttpHeaders.AUTHORIZATION, bearer(ownerToken));
         request.file(file);
         request.param("type", type);
         if (visibility != null) {
@@ -319,5 +337,27 @@ class EventAttachmentIntegrationTest {
             request.param("description", description);
         }
         return request;
+    }
+
+    private String register(String email) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "%s",
+                                  "password": "StrongPassword123!",
+                                  "displayName": "Owner"
+                                }
+                                """.formatted(email)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        return objectMapper.readTree(response).get("accessToken").asText();
+    }
+
+    private String bearer(String token) {
+        return "Bearer " + token;
     }
 }

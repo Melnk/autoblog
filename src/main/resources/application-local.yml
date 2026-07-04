@@ -8,3 +8,8 @@ spring:
       hibernate:
         format_sql: true
     show-sql: false
+
+autoblog:
+  security:
+    jwt-secret: local-development-secret-change-before-production-please
+    jwt-ttl-minutes: 60

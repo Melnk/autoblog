@@ -1,5 +1,6 @@
 package com.autoblog.attachment.application;
 
+import com.autoblog.access.application.VehicleAccessService;
 import com.autoblog.application.VehicleEventNotFoundException;
 import com.autoblog.application.VehicleNotFoundException;
 import com.autoblog.attachment.domain.AttachmentNotFoundException;
@@ -36,6 +37,7 @@ public class EventAttachmentService {
     private final AttachmentStorage storage;
     private final AttachmentChecksumService checksumService;
     private final AttachmentProperties properties;
+    private final VehicleAccessService vehicleAccess;
 
     public EventAttachmentService(
             EventAttachmentJpaRepository attachments,
@@ -43,7 +45,8 @@ public class EventAttachmentService {
             VehicleEventJpaRepository events,
             AttachmentStorage storage,
             AttachmentChecksumService checksumService,
-            AttachmentProperties properties
+            AttachmentProperties properties,
+            VehicleAccessService vehicleAccess
     ) {
         this.attachments = attachments;
         this.vehicles = vehicles;
@@ -51,6 +54,7 @@ public class EventAttachmentService {
         this.storage = storage;
         this.checksumService = checksumService;
         this.properties = properties;
+        this.vehicleAccess = vehicleAccess;
     }
 
     @Transactional
@@ -62,6 +66,7 @@ public class EventAttachmentService {
             AttachmentVisibility visibility,
             String description
     ) {
+        vehicleAccess.requireEditAccess(vehicleId);
         VehicleEntity vehicle = findVehicle(vehicleId);
         VehicleEventEntity event = findEvent(vehicleId, eventId);
         byte[] content = validateAndRead(file);
@@ -90,6 +95,7 @@ public class EventAttachmentService {
 
     @Transactional(readOnly = true)
     public List<EventAttachmentView> list(UUID vehicleId, UUID eventId) {
+        vehicleAccess.requireViewAccess(vehicleId);
         findVehicle(vehicleId);
         findEvent(vehicleId, eventId);
         return attachments.findByEvent_IdOrderByCreatedAtAsc(eventId).stream()
@@ -99,6 +105,7 @@ public class EventAttachmentService {
 
     @Transactional(readOnly = true)
     public AttachmentContentView download(UUID vehicleId, UUID eventId, UUID attachmentId) {
+        vehicleAccess.requireViewAccess(vehicleId);
         findVehicle(vehicleId);
         findEvent(vehicleId, eventId);
         EventAttachmentEntity attachment = attachments.findByIdAndVehicle_IdAndEvent_Id(attachmentId, vehicleId, eventId)
