@@ -63,6 +63,29 @@ Swagger UI:
 http://localhost:8080/swagger-ui.html
 ```
 
+## Run Frontend
+
+The Web MVP lives in `frontend/`.
+
+```bash
+cd frontend
+cp .env.example .env.local
+pnpm install
+pnpm dev
+```
+
+Frontend URL:
+
+```text
+http://localhost:3000
+```
+
+Required frontend env var:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+```
+
 ## API Contract
 
 Vehicle events require:

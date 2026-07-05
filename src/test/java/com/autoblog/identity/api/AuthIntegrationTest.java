@@ -2,7 +2,9 @@ package com.autoblog.identity.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -136,6 +138,18 @@ class AuthIntegrationTest {
         mockMvc.perform(get("/api/v1/vehicles"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    void corsPreflightForRegisterIsAllowedWithoutAuthentication() throws Exception {
+        var result = mockMvc.perform(options("/api/v1/auth/register")
+                        .header(HttpHeaders.ORIGIN, "http://localhost:3000")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "content-type"))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:3000"))
+                .andReturn();
+
+        assertThat(result.getResponse().getStatus()).isIn(200, 204);
     }
 
     private JsonNode register(String email, String displayName) throws Exception {
