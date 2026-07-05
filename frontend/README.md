@@ -53,7 +53,7 @@ pnpm lint
 
 ## Test User Flow
 
-1. Register a user.
+1. Register a user with password confirmation.
 2. Create a vehicle.
 3. Open the vehicle detail page.
 4. Add a maintenance or repair event.
@@ -64,6 +64,7 @@ pnpm lint
 ## Manual QA Checklist
 
 - Register works.
+- Registration requires matching password confirmation.
 - Login works.
 - Unauthorized user is redirected to `/login`.
 - Vehicle creation works.

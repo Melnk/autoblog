@@ -13,11 +13,16 @@ import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName } from "@/components/ui/form";
 import { ApiError, readableApiError } from "@/lib/api/client";
+import type { RegisterPayload } from "@/lib/api/auth";
 
 const schema = z.object({
   email: z.string().email("Введите email"),
   password: z.string().min(8, "Минимум 8 символов"),
+  confirmPassword: z.string().min(1, "Повторите пароль"),
   displayName: z.string().optional()
+}).refine((value) => value.password === value.confirmPassword, {
+  path: ["confirmPassword"],
+  message: "Пароли не совпадают"
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -31,6 +36,7 @@ export default function RegisterPage() {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       displayName: ""
     }
   });
@@ -38,7 +44,7 @@ export default function RegisterPage() {
   async function onSubmit(values: FormValues) {
     setApiError(null);
     try {
-      await registerUser(values);
+      await registerUser(toRegisterPayload(values));
       router.replace("/vehicles");
     } catch (error) {
       setApiError(error);
@@ -71,7 +77,22 @@ export default function RegisterPage() {
               <input className={inputClassName()} autoComplete="email" {...register("email")} />
             </Field>
             <Field label="Пароль" error={errors.password?.message}>
-              <input className={inputClassName()} type="password" autoComplete="new-password" {...register("password")} />
+              <input
+                className={inputClassName()}
+                type="password"
+                autoComplete="new-password"
+                placeholder="Введите пароль"
+                {...register("password")}
+              />
+            </Field>
+            <Field label="Повторите пароль" error={errors.confirmPassword?.message}>
+              <input
+                className={inputClassName()}
+                type="password"
+                autoComplete="new-password"
+                placeholder="Повторите пароль"
+                {...register("confirmPassword")}
+              />
             </Field>
             <Field label="Имя" error={errors.displayName?.message}>
               <input className={inputClassName()} placeholder="Например, Алексей" {...register("displayName")} />
@@ -90,6 +111,14 @@ export default function RegisterPage() {
       </div>
     </div>
   );
+}
+
+function toRegisterPayload(values: FormValues): RegisterPayload {
+  return {
+    email: values.email,
+    password: values.password,
+    displayName: values.displayName || undefined
+  };
 }
 
 function authErrorMessage(error: unknown, mode: "login" | "register") {
