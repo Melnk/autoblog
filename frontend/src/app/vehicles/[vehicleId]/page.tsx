@@ -18,17 +18,23 @@ import { listEvents } from "@/lib/api/events";
 import type { EventAttachmentDto, VehicleAccessRole, VehicleDto, VehicleEventDto } from "@/lib/api/types";
 import { getVehicle, listVehicleAccess } from "@/lib/api/vehicles";
 
-export default function VehicleDetailPage({ params }: { params: { vehicleId: string } }) {
+export default function VehicleDetailPage({
+  params,
+  searchParams
+}: {
+  params: { vehicleId: string };
+  searchParams?: { eventCreated?: string };
+}) {
   return (
     <ProtectedRoute>
       <AppShell>
-        <VehicleDetailContent vehicleId={params.vehicleId} />
+        <VehicleDetailContent vehicleId={params.vehicleId} eventCreated={searchParams?.eventCreated === "1"} />
       </AppShell>
     </ProtectedRoute>
   );
 }
 
-function VehicleDetailContent({ vehicleId }: { vehicleId: string }) {
+function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; eventCreated: boolean }) {
   const { user } = useAuth();
   const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
   const [events, setEvents] = useState<VehicleEventDto[]>([]);
@@ -44,10 +50,11 @@ function VehicleDetailContent({ vehicleId }: { vehicleId: string }) {
           getVehicle(vehicleId),
           listEvents(vehicleId)
         ]);
+        const sortedEvents = [...eventResponse].sort((left, right) => left.sequenceNumber - right.sequenceNumber);
         setVehicle(vehicleResponse);
-        setEvents(eventResponse);
+        setEvents(sortedEvents);
         const attachmentEntries = await Promise.all(
-          eventResponse.map(async (event) => [event.id, await listAttachments(vehicleId, event.id)] as const)
+          sortedEvents.map(async (event) => [event.id, await listAttachments(vehicleId, event.id)] as const)
         );
         setAttachmentsByEvent(Object.fromEntries(attachmentEntries));
 
@@ -76,6 +83,11 @@ function VehicleDetailContent({ vehicleId }: { vehicleId: string }) {
         К автомобилям
       </Link>
       <ErrorMessage message={error} />
+      {eventCreated ? (
+        <div className="mb-6 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+          Событие добавлено в историю автомобиля.
+        </div>
+      ) : null}
       {loading ? (
         <Card className="text-slate-400">Загружаем историю…</Card>
       ) : vehicle ? (
@@ -87,7 +99,8 @@ function VehicleDetailContent({ vehicleId }: { vehicleId: string }) {
               action={<ButtonLink href={`/vehicles/${vehicleId}/events/new`}><Plus className="h-4 w-4" />Добавить событие</ButtonLink>}
             />
             <Card className="mb-6">
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-5">
+                <Spec label="Поколение" value={vehicle.generation} />
                 <Spec label="Двигатель" value={vehicle.engine} />
                 <Spec label="КПП" value={vehicle.transmission} />
                 <Spec label="Комплектация" value={vehicle.trim} />

@@ -53,13 +53,17 @@ pnpm lint
 
 ## Test User Flow
 
-1. Register a user with password confirmation.
-2. Create a vehicle.
-3. Open the vehicle detail page.
-4. Add a maintenance or repair event.
-5. Upload an attachment to the event.
-6. Generate a public report.
-7. Open `/reports/{publicToken}` without logging in.
+1. Start PostgreSQL and backend.
+2. Start the frontend.
+3. Register a user with password confirmation.
+4. Create a vehicle.
+5. Open the vehicle detail page.
+6. Add a maintenance or repair event.
+7. Upload one PUBLIC attachment.
+8. Upload one PRIVATE attachment.
+9. Generate a public report.
+10. Open `/reports/{publicToken}` without logging in.
+11. Verify only the PUBLIC attachment appears in the public report.
 
 ## Manual QA Checklist
 
@@ -69,12 +73,13 @@ pnpm lint
 - Unauthorized user is redirected to `/login`.
 - Vehicle creation works.
 - Vehicles list shows backend data only.
+- Vehicles list search works by VIN, make, and model.
 - Events appear in the timeline.
 - Event `title` is required.
 - Attachment upload works.
+- PUBLIC attachment appears in public report.
+- PRIVATE attachment does not appear in public report.
 - Public report opens without token.
-- Private attachment does not appear in public report.
-- Public attachment appears in public report.
 
 ## Auth Note
 

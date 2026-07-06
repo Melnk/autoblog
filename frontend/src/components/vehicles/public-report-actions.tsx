@@ -12,12 +12,14 @@ import { API_BASE_URL, readableApiError } from "@/lib/api/client";
 export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
   const [report, setReport] = useState<PublicReportMetadataDto | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
   const frontendUrl = report ? `/reports/${report.publicToken}` : null;
   const absoluteFrontendUrl = frontendUrl && typeof window !== "undefined" ? `${window.location.origin}${frontendUrl}` : frontendUrl;
 
   async function generate() {
     setLoading(true);
+    setCopied(false);
     setError(null);
     try {
       setReport(await createPublicReport(vehicleId));
@@ -31,6 +33,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
   async function copy() {
     if (absoluteFrontendUrl) {
       await navigator.clipboard.writeText(absoluteFrontendUrl);
+      setCopied(true);
     }
   }
 
@@ -47,6 +50,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
           {report ? (
             <div className="mt-4 space-y-3">
               <div className="rounded-lg border border-slate-800 bg-black/20 p-3 text-sm text-slate-300">
+                <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Token {shortToken(report.publicToken)}</div>
                 <div className="truncate">Frontend: {absoluteFrontendUrl}</div>
                 <div className="mt-1 truncate text-slate-500">Backend: {API_BASE_URL}{report.publicUrl}</div>
               </div>
@@ -57,7 +61,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
                 </ButtonLink>
                 <Button type="button" variant="secondary" onClick={() => void copy()}>
                   <Copy className="h-4 w-4" />
-                  Скопировать
+                  {copied ? "Скопировано" : "Скопировать"}
                 </Button>
               </div>
             </div>
@@ -70,4 +74,8 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
       </div>
     </Card>
   );
+}
+
+function shortToken(token: string) {
+  return token.length > 16 ? `${token.slice(0, 8)}…${token.slice(-6)}` : token;
 }

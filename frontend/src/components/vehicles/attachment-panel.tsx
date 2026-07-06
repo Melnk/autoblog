@@ -117,6 +117,9 @@ export function AttachmentPanel({
           <select className={inputClassName()} value={visibility} onChange={(event) => setVisibility(event.target.value as AttachmentVisibility)}>
             {visibilities.map((item) => <option key={item} value={item}>{item}</option>)}
           </select>
+          <span className="mt-1 block text-xs text-slate-500">
+            PRIVATE не попадет в публичный отчет. PUBLIC будет виден покупателю.
+          </span>
         </Field>
         <Field label="Описание">
           <input className={inputClassName()} value={description} onChange={(event) => setDescription(event.target.value)} />

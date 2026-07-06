@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Download, Gauge, ShieldCheck, XCircle } from "lucide-react";
+import { CalendarDays, CheckCircle2, Coins, Download, Gauge, MapPin, XCircle } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -86,11 +86,14 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
           </div>
           <p className="mt-5 text-xs leading-5 text-slate-500">
             Отчет не содержит данных владельца, внутренних UUID автомобиля или внутренних UUID событий.
+            Показываются только вложения, отмеченные как PUBLIC.
           </p>
         </Card>
 
         <div className="space-y-5">
-          {report.events.map((event) => (
+          {report.events.length === 0 ? (
+            <Card className="text-slate-400">В публичном отчете пока нет событий истории.</Card>
+          ) : report.events.map((event) => (
             <Card key={event.sequenceNumber}>
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -101,11 +104,17 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
                   <h3 className="mt-3 text-xl font-bold text-white">{event.title}</h3>
                   {event.description ? <p className="mt-2 text-sm leading-6 text-slate-300">{event.description}</p> : null}
                 </div>
-                <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[420px]">
+                <div className="grid gap-2 text-sm sm:grid-cols-2 lg:min-w-[420px]">
                   <PublicInfo icon={<CalendarDays className="h-4 w-4" />} label="Дата" value={formatDate(event.eventDate)} />
                   <PublicInfo icon={<Gauge className="h-4 w-4" />} label="Пробег" value={event.odometerKm ? `${event.odometerKm.toLocaleString("ru-RU")} км` : "—"} />
-                  <PublicInfo icon={<ShieldCheck className="h-4 w-4" />} label="Hash" value={shortHash(event.eventHash)} />
+                  <PublicInfo icon={<Coins className="h-4 w-4" />} label="Стоимость" value={formatMoney(event.costAmount, event.costCurrency)} />
+                  <PublicInfo icon={<MapPin className="h-4 w-4" />} label="Сервис" value={event.serviceName || "—"} />
                 </div>
+              </div>
+
+              <div className="mt-5 grid gap-2 rounded-lg border border-slate-800 bg-black/20 p-3 text-xs text-slate-500 md:grid-cols-2">
+                <div>prev: <span className="text-slate-300">{shortHash(event.previousEventHash)}</span></div>
+                <div>hash: <span className="text-slate-300">{shortHash(event.eventHash)}</span></div>
               </div>
 
               {event.attachments.length > 0 ? (

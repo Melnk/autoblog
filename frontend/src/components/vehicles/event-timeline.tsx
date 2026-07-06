@@ -1,4 +1,4 @@
-import { CalendarDays, Coins, Gauge, Wrench } from "lucide-react";
+import { CalendarDays, Coins, Gauge, MapPin, Wrench } from "lucide-react";
 import type { ReactNode } from "react";
 import { AttachmentPanel } from "@/components/vehicles/attachment-panel";
 import { Badge } from "@/components/ui/badge";
@@ -42,10 +42,11 @@ export function EventTimeline({
                 <h3 className="mt-3 text-xl font-bold text-white">{event.title}</h3>
                 {event.description ? <p className="mt-2 text-sm leading-6 text-slate-300">{event.description}</p> : null}
               </div>
-              <div className="grid gap-2 text-sm sm:grid-cols-3 lg:min-w-[460px]">
+              <div className="grid gap-2 text-sm sm:grid-cols-2 lg:min-w-[460px]">
                 <Info icon={<CalendarDays className="h-4 w-4" />} label="Дата" value={formatDate(event.eventDate)} />
                 <Info icon={<Gauge className="h-4 w-4" />} label="Пробег" value={event.odometerKm ? `${event.odometerKm.toLocaleString("ru-RU")} км` : "—"} />
                 <Info icon={<Coins className="h-4 w-4" />} label="Стоимость" value={formatMoney(event.costAmount, event.costCurrency)} />
+                <Info icon={<MapPin className="h-4 w-4" />} label="Сервис" value={event.serviceName || "—"} />
               </div>
             </div>
             <div className="mt-4 rounded-lg border border-slate-800 bg-black/20 p-3 text-xs text-slate-500">

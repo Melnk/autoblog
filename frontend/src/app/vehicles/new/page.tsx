@@ -13,8 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Card, SectionHeader } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName } from "@/components/ui/form";
-import { readableApiError } from "@/lib/api/client";
+import { ApiError, readableApiError } from "@/lib/api/client";
 import { createVehicle, type CreateVehiclePayload } from "@/lib/api/vehicles";
+
+const vinPattern = /^[A-Z0-9]+$/;
+const forbiddenVinCharacters = /[IOQ]/;
 
 const optionalYear = z.preprocess(
   (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
@@ -22,7 +25,13 @@ const optionalYear = z.preprocess(
 );
 
 const schema = z.object({
-  vin: z.string().min(1, "VIN обязателен"),
+  vin: z.string()
+    .trim()
+    .min(1, "VIN обязателен")
+    .transform((value) => value.toUpperCase())
+    .refine((value) => value.length === 17, "VIN должен состоять из 17 символов")
+    .refine((value) => vinPattern.test(value), "VIN может содержать только A-Z и 0-9")
+    .refine((value) => !forbiddenVinCharacters.test(value), "VIN не должен содержать I, O или Q"),
   make: z.string().optional(),
   model: z.string().optional(),
   generation: z.string().optional(),
@@ -47,7 +56,7 @@ export default function NewVehiclePage() {
 
 function NewVehicleContent() {
   const router = useRouter();
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<unknown>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -68,9 +77,11 @@ function NewVehicleContent() {
       const vehicle = await createVehicle(cleanPayload(values));
       router.push(`/vehicles/${vehicle.id}`);
     } catch (error) {
-      setApiError(readableApiError(error));
+      setApiError(error);
     }
   }
+
+  const vinField = register("vin");
 
   return (
     <div>
@@ -82,10 +93,22 @@ function NewVehicleContent() {
       <Card className="max-w-4xl">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
-            <ErrorMessage message={apiError} />
+            <ErrorMessage
+              message={apiError ? readableApiError(apiError) : null}
+              details={apiError instanceof ApiError ? apiError.details : []}
+            />
           </div>
           <Field label="VIN" error={errors.vin?.message}>
-            <input className={inputClassName()} placeholder="XTA217030C0000000" {...register("vin")} />
+            <input
+              className={inputClassName()}
+              maxLength={17}
+              placeholder="XTA217030C0000000"
+              {...vinField}
+              onChange={(event) => {
+                event.currentTarget.value = event.currentTarget.value.toUpperCase();
+                void vinField.onChange(event);
+              }}
+            />
           </Field>
           <Field label="Рынок" error={errors.market?.message}>
             <input className={inputClassName()} {...register("market")} />

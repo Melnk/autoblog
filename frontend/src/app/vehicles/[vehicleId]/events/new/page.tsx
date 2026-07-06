@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, SectionHeader } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName, textareaClassName } from "@/components/ui/form";
-import { readableApiError } from "@/lib/api/client";
+import { ApiError, readableApiError } from "@/lib/api/client";
 import { createEvent, type CreateEventPayload } from "@/lib/api/events";
 import type { VehicleEventType } from "@/lib/api/types";
 
@@ -77,7 +77,7 @@ export default function NewEventPage({ params }: { params: { vehicleId: string }
 
 function NewEventContent({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<unknown>(null);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -95,9 +95,9 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
     setApiError(null);
     try {
       await createEvent(vehicleId, cleanEventPayload(values));
-      router.push(`/vehicles/${vehicleId}`);
+      router.push(`/vehicles/${vehicleId}?eventCreated=1`);
     } catch (error) {
-      setApiError(readableApiError(error));
+      setApiError(error);
     }
   }
 
@@ -111,7 +111,10 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
       <Card className="max-w-5xl">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
-            <ErrorMessage message={apiError} />
+            <ErrorMessage
+              message={apiError ? readableApiError(apiError) : null}
+              details={apiError instanceof ApiError ? apiError.details : []}
+            />
           </div>
           <Field label="Тип" error={errors.type?.message}>
             <select className={inputClassName()} {...register("type")}>
