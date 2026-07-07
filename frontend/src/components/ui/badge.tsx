@@ -1,5 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import type { VehicleAccessRole } from "@/lib/api/types";
+import { getEnumLabel, useLanguage } from "@/lib/i18n";
 
 const roleStyles: Record<VehicleAccessRole, string> = {
   OWNER: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
@@ -16,5 +19,7 @@ export function Badge({ className, children }: { className?: string; children: R
 }
 
 export function RoleBadge({ role }: { role: VehicleAccessRole }) {
-  return <Badge className={roleStyles[role]}>{role}</Badge>;
+  const { language } = useLanguage();
+
+  return <Badge className={roleStyles[role]}>{getEnumLabel(language, "vehicleAccessRole", role)}</Badge>;
 }

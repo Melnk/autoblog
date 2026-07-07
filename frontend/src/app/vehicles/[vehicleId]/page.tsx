@@ -17,6 +17,7 @@ import { readableApiError } from "@/lib/api/client";
 import { listEvents } from "@/lib/api/events";
 import type { EventAttachmentDto, VehicleAccessRole, VehicleDto, VehicleEventDto } from "@/lib/api/types";
 import { getVehicle, listVehicleAccess } from "@/lib/api/vehicles";
+import { useLanguage } from "@/lib/i18n";
 
 export default function VehicleDetailPage({
   params,
@@ -36,6 +37,7 @@ export default function VehicleDetailPage({
 
 function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; eventCreated: boolean }) {
   const { user } = useAuth();
+  const { language, t } = useLanguage();
   const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
   const [events, setEvents] = useState<VehicleEventDto[]>([]);
   const [attachmentsByEvent, setAttachmentsByEvent] = useState<Record<string, EventAttachmentDto[]>>({});
@@ -65,14 +67,14 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
           setRole(null);
         }
       } catch (requestError) {
-        setError(readableApiError(requestError));
+        setError(readableApiError(requestError, language));
       } finally {
         setLoading(false);
       }
     }
 
     void load();
-  }, [user?.id, vehicleId]);
+  }, [language, user?.id, vehicleId]);
 
   const title = vehicle ? [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Автомобиль" : "Автомобиль";
 
@@ -80,31 +82,31 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
     <div>
       <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <ArrowLeft className="h-4 w-4" />
-        К автомобилям
+        {t("vehicle.backToVehicles")}
       </Link>
       <ErrorMessage message={error} />
       {eventCreated ? (
         <div className="mb-6 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-          Событие добавлено в историю автомобиля.
+          {t("events.created")}
         </div>
       ) : null}
       {loading ? (
-        <Card className="text-slate-400">Загружаем историю…</Card>
+        <Card className="text-slate-400">{t("common.loading")}</Card>
       ) : vehicle ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
           <div>
             <SectionHeader
               title={vehicle.year ? `${vehicle.year} ${title}` : title}
               description={`VIN ${vehicle.vin}`}
-              action={<ButtonLink href={`/vehicles/${vehicleId}/events/new`}><Plus className="h-4 w-4" />Добавить событие</ButtonLink>}
+              action={<ButtonLink href={`/vehicles/${vehicleId}/events/new`}><Plus className="h-4 w-4" />{t("events.add")}</ButtonLink>}
             />
             <Card className="mb-6">
               <div className="grid gap-4 md:grid-cols-5">
-                <Spec label="Поколение" value={vehicle.generation} />
-                <Spec label="Двигатель" value={vehicle.engine} />
-                <Spec label="КПП" value={vehicle.transmission} />
-                <Spec label="Комплектация" value={vehicle.trim} />
-                <Spec label="Рынок" value={vehicle.market} />
+                <Spec label={t("label.generation")} value={vehicle.generation} />
+                <Spec label={t("label.engine")} value={vehicle.engine} />
+                <Spec label={t("label.transmission")} value={vehicle.transmission} />
+                <Spec label={t("label.trim")} value={vehicle.trim} />
+                <Spec label={t("label.market")} value={vehicle.market} />
               </div>
               {role ? <div className="mt-4"><RoleBadge role={role} /></div> : null}
             </Card>

@@ -4,7 +4,8 @@ import { AttachmentPanel } from "@/components/vehicles/attachment-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { EventAttachmentDto, VehicleEventDto } from "@/lib/api/types";
-import { formatDate, formatMoney, shortHash } from "@/lib/utils";
+import { formatDate, formatKm, formatMoney, shortHash } from "@/lib/format";
+import { getEnumLabel, useLanguage } from "@/lib/i18n";
 
 export function EventTimeline({
   vehicleId,
@@ -15,11 +16,13 @@ export function EventTimeline({
   events: VehicleEventDto[];
   attachmentsByEvent: Record<string, EventAttachmentDto[]>;
 }) {
+  const { language, t } = useLanguage();
+
   if (events.length === 0) {
     return (
       <Card>
-        <h3 className="text-lg font-bold text-white">Событий пока нет</h3>
-        <p className="mt-2 text-sm text-slate-400">Добавьте первое обслуживание, ремонт или осмотр.</p>
+        <h3 className="text-lg font-bold text-white">{t("events.emptyTitle")}</h3>
+        <p className="mt-2 text-sm text-slate-400">{t("events.emptyDescription")}</p>
       </Card>
     );
   }
@@ -37,16 +40,16 @@ export function EventTimeline({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>#{event.sequenceNumber}</Badge>
-                  <Badge>{event.type}</Badge>
+                  <Badge>{getEnumLabel(language, "vehicleEventType", event.type)}</Badge>
                 </div>
                 <h3 className="mt-3 text-xl font-bold text-white">{event.title}</h3>
                 {event.description ? <p className="mt-2 text-sm leading-6 text-slate-300">{event.description}</p> : null}
               </div>
               <div className="grid gap-2 text-sm sm:grid-cols-2 lg:min-w-[460px]">
-                <Info icon={<CalendarDays className="h-4 w-4" />} label="Дата" value={formatDate(event.eventDate)} />
-                <Info icon={<Gauge className="h-4 w-4" />} label="Пробег" value={event.odometerKm ? `${event.odometerKm.toLocaleString("ru-RU")} км` : "—"} />
-                <Info icon={<Coins className="h-4 w-4" />} label="Стоимость" value={formatMoney(event.costAmount, event.costCurrency)} />
-                <Info icon={<MapPin className="h-4 w-4" />} label="Сервис" value={event.serviceName || "—"} />
+                <Info icon={<CalendarDays className="h-4 w-4" />} label={t("label.date")} value={formatDate(event.eventDate, language)} />
+                <Info icon={<Gauge className="h-4 w-4" />} label={t("label.odometer")} value={formatKm(event.odometerKm, language)} />
+                <Info icon={<Coins className="h-4 w-4" />} label={t("label.cost")} value={formatMoney(event.costAmount, event.costCurrency, language)} />
+                <Info icon={<MapPin className="h-4 w-4" />} label={t("label.service")} value={event.serviceName || "—"} />
               </div>
             </div>
             <div className="mt-4 rounded-lg border border-slate-800 bg-black/20 p-3 text-xs text-slate-500">

@@ -1,5 +1,6 @@
 import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import type { ApiErrorBody, ApiErrorDetail } from "@/lib/api/types";
+import { DEFAULT_LANGUAGE, translations, type Language } from "@/lib/i18n/translations";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
@@ -133,16 +134,16 @@ async function handleError(
   throw apiError;
 }
 
-export function readableApiError(error: unknown) {
+export function readableApiError(error: unknown, language: Language = DEFAULT_LANGUAGE) {
   if (error instanceof ApiError) {
     if (error.status === undefined) {
-      return "Backend недоступен. Проверьте, что API запущен на localhost:8080";
+      return translations[language]["common.backendUnavailable"];
     }
     if (error.status === 403) {
-      return "Недостаточно прав";
+      return translations[language]["common.insufficientPermissions"];
     }
     if (error.status === 404) {
-      return "Не найдено или нет доступа";
+      return translations[language]["common.notFoundOrNoAccess"];
     }
     return formatApiErrorMessage(error);
   }

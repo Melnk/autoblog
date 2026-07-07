@@ -15,19 +15,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName, textareaClassName } from "@/components/ui/form";
 import { ApiError, readableApiError } from "@/lib/api/client";
 import { createEvent, type CreateEventPayload } from "@/lib/api/events";
-import type { VehicleEventType } from "@/lib/api/types";
-
-const eventTypes: VehicleEventType[] = [
-  "MAINTENANCE",
-  "REPAIR",
-  "DIAGNOSTIC",
-  "ACCIDENT",
-  "INSPECTION",
-  "ODOMETER",
-  "FUEL",
-  "DOCUMENT",
-  "OTHER"
-];
+import { VEHICLE_EVENT_TYPE_OPTIONS, getVehicleEventTypeOptions, useLanguage } from "@/lib/i18n";
 
 const optionalPositiveInteger = z.preprocess(
   (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
@@ -40,7 +28,7 @@ const optionalPositiveNumber = z.preprocess(
 );
 
 const schema = z.object({
-  type: z.enum(eventTypes as [VehicleEventType, ...VehicleEventType[]]),
+  type: z.enum(VEHICLE_EVENT_TYPE_OPTIONS),
   eventDate: z.string().min(1, "Дата обязательна"),
   odometerKm: optionalPositiveInteger,
   title: z.string().min(1, "Название обязательно"),
@@ -77,7 +65,9 @@ export default function NewEventPage({ params }: { params: { vehicleId: string }
 
 function NewEventContent({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
+  const { language, t } = useLanguage();
   const [apiError, setApiError] = useState<unknown>(null);
+  const eventTypeOptions = getVehicleEventTypeOptions(language);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -105,42 +95,42 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
     <div>
       <Link href={`/vehicles/${vehicleId}`} className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <ArrowLeft className="h-4 w-4" />
-        К автомобилю
+        {t("events.backToVehicle")}
       </Link>
-      <SectionHeader title="Новое событие" description="Добавьте обслуживание, ремонт, диагностику или другой факт истории." />
+      <SectionHeader title={t("events.newTitle")} description={t("events.newDescription")} />
       <Card className="max-w-5xl">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
             <ErrorMessage
-              message={apiError ? readableApiError(apiError) : null}
+              message={apiError ? readableApiError(apiError, language) : null}
               details={apiError instanceof ApiError ? apiError.details : []}
             />
           </div>
-          <Field label="Тип" error={errors.type?.message}>
+          <Field label={t("label.type")} error={errors.type?.message}>
             <select className={inputClassName()} {...register("type")}>
-              {eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}
+              {eventTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
           </Field>
-          <Field label="Дата" error={errors.eventDate?.message}>
+          <Field label={t("label.date")} error={errors.eventDate?.message}>
             <input className={inputClassName()} type="date" {...register("eventDate")} />
           </Field>
-          <Field label="Название" error={errors.title?.message}>
+          <Field label={t("label.title")} error={errors.title?.message}>
             <input className={inputClassName()} placeholder="Замена масла" {...register("title")} />
           </Field>
-          <Field label="Пробег, км" error={errors.odometerKm?.message}>
+          <Field label={t("label.odometerKm")} error={errors.odometerKm?.message}>
             <input className={inputClassName()} inputMode="numeric" placeholder="120000" {...register("odometerKm")} />
           </Field>
-          <Field label="Стоимость" error={errors.costAmount?.message}>
+          <Field label={t("label.cost")} error={errors.costAmount?.message}>
             <input className={inputClassName()} inputMode="decimal" placeholder="5000" {...register("costAmount")} />
           </Field>
-          <Field label="Валюта" error={errors.costCurrency?.message}>
+          <Field label={t("label.currency")} error={errors.costCurrency?.message}>
             <input className={inputClassName()} {...register("costCurrency")} />
           </Field>
-          <Field label="Сервис" error={errors.serviceName?.message}>
+          <Field label={t("label.service")} error={errors.serviceName?.message}>
             <input className={inputClassName()} placeholder="Гаражный сервис" {...register("serviceName")} />
           </Field>
           <div className="md:col-span-2">
-            <Field label="Описание" error={errors.description?.message}>
+            <Field label={t("label.description")} error={errors.description?.message}>
               <textarea className={textareaClassName()} {...register("description")} />
             </Field>
           </div>
@@ -155,7 +145,7 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
           </div>
           <div className="md:col-span-2">
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Добавляем…" : "Добавить событие"}
+              {isSubmitting ? t("events.adding") : t("events.add")}
             </Button>
           </div>
         </form>

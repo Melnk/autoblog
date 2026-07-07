@@ -15,6 +15,7 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName } from "@/components/ui/form";
 import { ApiError, readableApiError } from "@/lib/api/client";
 import { createVehicle, type CreateVehiclePayload } from "@/lib/api/vehicles";
+import { useLanguage } from "@/lib/i18n";
 
 const vinPattern = /^[A-Z0-9]+$/;
 const forbiddenVinCharacters = /[IOQ]/;
@@ -57,6 +58,7 @@ export default function NewVehiclePage() {
 function NewVehicleContent() {
   const router = useRouter();
   const [apiError, setApiError] = useState<unknown>(null);
+  const { language, t } = useLanguage();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -87,14 +89,14 @@ function NewVehicleContent() {
     <div>
       <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
         <ArrowLeft className="h-4 w-4" />
-        К автомобилям
+        {t("vehicle.backToVehicles")}
       </Link>
-      <SectionHeader title="Новый автомобиль" description="Создайте карточку машины. Вы автоматически станете OWNER." />
+      <SectionHeader title={t("vehicle.newTitle")} description={t("vehicle.newDescription")} />
       <Card className="max-w-4xl">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
             <ErrorMessage
-              message={apiError ? readableApiError(apiError) : null}
+              message={apiError ? readableApiError(apiError, language) : null}
               details={apiError instanceof ApiError ? apiError.details : []}
             />
           </div>
@@ -110,7 +112,7 @@ function NewVehicleContent() {
               }}
             />
           </Field>
-          <Field label="Рынок" error={errors.market?.message}>
+          <Field label={t("label.market")} error={errors.market?.message}>
             <input className={inputClassName()} {...register("market")} />
           </Field>
           <Field label="Марка" error={errors.make?.message}>
@@ -119,24 +121,24 @@ function NewVehicleContent() {
           <Field label="Модель" error={errors.model?.message}>
             <input className={inputClassName()} placeholder="Priora" {...register("model")} />
           </Field>
-          <Field label="Поколение" error={errors.generation?.message}>
+          <Field label={t("label.generation")} error={errors.generation?.message}>
             <input className={inputClassName()} placeholder="2170" {...register("generation")} />
           </Field>
           <Field label="Год" error={errors.year?.message}>
             <input className={inputClassName()} inputMode="numeric" placeholder="2012" {...register("year")} />
           </Field>
-          <Field label="Двигатель" error={errors.engine?.message}>
+          <Field label={t("label.engine")} error={errors.engine?.message}>
             <input className={inputClassName()} placeholder="1.6" {...register("engine")} />
           </Field>
-          <Field label="КПП" error={errors.transmission?.message}>
+          <Field label={t("label.transmission")} error={errors.transmission?.message}>
             <input className={inputClassName()} placeholder="MT" {...register("transmission")} />
           </Field>
-          <Field label="Комплектация" error={errors.trim?.message}>
+          <Field label={t("label.trim")} error={errors.trim?.message}>
             <input className={inputClassName()} placeholder="Norma" {...register("trim")} />
           </Field>
           <div className="flex items-end md:col-span-2">
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Создаем…" : "Создать автомобиль"}
+              {isSubmitting ? t("vehicle.creating") : t("vehicle.create")}
             </Button>
           </div>
         </form>

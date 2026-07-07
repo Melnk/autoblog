@@ -65,6 +65,15 @@ pnpm lint
 10. Open `/reports/{publicToken}` without logging in.
 11. Verify only the PUBLIC attachment appears in the public report.
 
+## Language Settings
+
+Open `/settings` to switch the interface language between Russian and English.
+
+- The selected language is stored in `localStorage` under `autoblog.language`.
+- The frontend displays localized enum labels for event types, attachment types, visibility, roles, and report statuses.
+- Backend enum values remain unchanged and are still sent to the API, for example `MAINTENANCE`, `RECEIPT`, `PRIVATE`, `PUBLIC`.
+- Language preference is not stored in the backend in this stage.
+
 ## Manual QA Checklist
 
 - Register works.
@@ -80,6 +89,18 @@ pnpm lint
 - PUBLIC attachment appears in public report.
 - PRIVATE attachment does not appear in public report.
 - Public report opens without token.
+- Open `/settings`.
+- Switch to English.
+- Vehicle event type select displays English labels.
+- Timeline displays English labels.
+- Attachment type and visibility display English labels.
+- Public report displays English labels.
+- Switch back to Russian.
+- Vehicle event type select displays Russian labels.
+- Timeline displays Russian labels.
+- Attachment type and visibility display Russian labels.
+- Event creation still sends backend enum values.
+- Attachment upload still sends backend enum values.
 
 ## Auth Note
 

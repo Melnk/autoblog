@@ -1,11 +1,15 @@
+"use client";
+
 import { ArrowRight, Calendar, Gauge, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Badge, RoleBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { VehicleDto } from "@/lib/api/types";
+import { useLanguage } from "@/lib/i18n";
 
 export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
   const title = [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Автомобиль";
+  const { t } = useLanguage();
 
   return (
     <Card className="group overflow-hidden p-0 transition hover:border-blue-400/50 hover:shadow-glow">
@@ -22,10 +26,10 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
       </div>
       <div className="space-y-5 p-5">
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <Spec label="Двигатель" value={vehicle.engine} />
-          <Spec label="КПП" value={vehicle.transmission} />
-          <Spec label="Комплектация" value={vehicle.trim} />
-          <Spec label="Рынок" value={vehicle.market} />
+          <Spec label={t("label.engine")} value={vehicle.engine} />
+          <Spec label={t("label.transmission")} value={vehicle.transmission} />
+          <Spec label={t("label.trim")} value={vehicle.trim} />
+          <Spec label={t("label.market")} value={vehicle.market} />
         </div>
         <div className="flex flex-wrap gap-2">
           {vehicle.generation ? <Badge>{vehicle.generation}</Badge> : null}
@@ -44,7 +48,7 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
           href={`/vehicles/${vehicle.id}`}
           className="flex items-center justify-between rounded-lg border border-slate-800 bg-surface-900 px-4 py-3 text-sm font-semibold text-slate-200 transition group-hover:border-blue-400/60 group-hover:text-white"
         >
-          Открыть автомобиль
+          {t("vehicles.open")}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>

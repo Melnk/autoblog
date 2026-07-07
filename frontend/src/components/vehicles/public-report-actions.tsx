@@ -8,12 +8,14 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { createPublicReport } from "@/lib/api/vehicles";
 import type { PublicReportMetadataDto } from "@/lib/api/types";
 import { API_BASE_URL, readableApiError } from "@/lib/api/client";
+import { useLanguage } from "@/lib/i18n";
 
 export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
   const [report, setReport] = useState<PublicReportMetadataDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { language, t } = useLanguage();
   const frontendUrl = report ? `/reports/${report.publicToken}` : null;
   const absoluteFrontendUrl = frontendUrl && typeof window !== "undefined" ? `${window.location.origin}${frontendUrl}` : frontendUrl;
 
@@ -24,7 +26,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
     try {
       setReport(await createPublicReport(vehicleId));
     } catch (requestError) {
-      setError(readableApiError(requestError));
+      setError(readableApiError(requestError, language));
     } finally {
       setLoading(false);
     }
@@ -44,8 +46,8 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
           <FileText className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-bold text-white">Публичный отчет</h3>
-          <p className="mt-1 text-sm text-slate-400">Ссылка для покупателя. Открывается без авторизации.</p>
+          <h3 className="text-lg font-bold text-white">{t("publicReport.title")}</h3>
+          <p className="mt-1 text-sm text-slate-400">{t("publicReport.description")}</p>
           <ErrorMessage message={error} />
           {report ? (
             <div className="mt-4 space-y-3">
@@ -57,17 +59,17 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
               <div className="flex flex-wrap gap-2">
                 <ButtonLink href={frontendUrl ?? "#"} target="_blank" variant="secondary">
                   <ExternalLink className="h-4 w-4" />
-                  Открыть
+                  {t("common.open")}
                 </ButtonLink>
                 <Button type="button" variant="secondary" onClick={() => void copy()}>
                   <Copy className="h-4 w-4" />
-                  {copied ? "Скопировано" : "Скопировать"}
+                  {copied ? t("common.copied") : t("common.copy")}
                 </Button>
               </div>
             </div>
           ) : (
             <Button type="button" className="mt-4" onClick={() => void generate()} disabled={loading}>
-              {loading ? "Генерируем…" : "Создать публичный отчет"}
+              {loading ? t("publicReport.creating") : t("publicReport.create")}
             </Button>
           )}
         </div>

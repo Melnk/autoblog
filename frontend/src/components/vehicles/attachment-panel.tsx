@@ -9,10 +9,13 @@ import { Field, inputClassName } from "@/components/ui/form";
 import { downloadAttachment, listAttachments, uploadAttachment } from "@/lib/api/attachments";
 import { readableApiError } from "@/lib/api/client";
 import type { AttachmentType, AttachmentVisibility, EventAttachmentDto } from "@/lib/api/types";
-import { formatBytes, shortHash } from "@/lib/utils";
-
-const attachmentTypes: AttachmentType[] = ["PHOTO", "RECEIPT", "WORK_ORDER", "DIAGNOSTIC_REPORT", "PART_PHOTO", "OTHER"];
-const visibilities: AttachmentVisibility[] = ["PRIVATE", "PUBLIC"];
+import { formatFileSize, shortHash } from "@/lib/format";
+import {
+  getAttachmentTypeOptions,
+  getAttachmentVisibilityOptions,
+  getEnumLabel,
+  useLanguage
+} from "@/lib/i18n";
 
 export function AttachmentPanel({
   vehicleId,
@@ -30,6 +33,10 @@ export function AttachmentPanel({
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const { language, t } = useLanguage();
+  const attachmentTypeOptions = getAttachmentTypeOptions(language);
+  const visibilityOptions = getAttachmentVisibilityOptions(language);
+  const selectedVisibility = visibilityOptions.find((option) => option.value === visibility);
 
   useEffect(() => {
     setAttachments(initialAttachments);
@@ -41,7 +48,7 @@ export function AttachmentPanel({
 
   async function onUpload() {
     if (!file) {
-      setError("Выберите файл");
+      setError(t("attachments.chooseFile"));
       return;
     }
     setError(null);
@@ -52,7 +59,7 @@ export function AttachmentPanel({
       setDescription("");
       await refresh();
     } catch (requestError) {
-      setError(readableApiError(requestError));
+      setError(readableApiError(requestError, language));
     } finally {
       setUploading(false);
     }
@@ -68,14 +75,14 @@ export function AttachmentPanel({
       link.click();
       URL.revokeObjectURL(url);
     } catch (requestError) {
-      setError(readableApiError(requestError));
+      setError(readableApiError(requestError, language));
     }
   }
 
   return (
     <div className="mt-4 rounded-xl border border-slate-800 bg-black/20 p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white">Доказательства</h4>
+        <h4 className="text-sm font-semibold text-white">{t("attachments.title")}</h4>
         <Badge>{attachments.length}</Badge>
       </div>
       <ErrorMessage message={error} />
@@ -86,48 +93,48 @@ export function AttachmentPanel({
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-slate-100">{attachment.originalFilename}</div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-400">
-                  <span>{attachment.type}</span>
-                  <span>{attachment.visibility}</span>
-                  <span>{formatBytes(attachment.sizeBytes)}</span>
+                  <span>{getEnumLabel(language, "attachmentType", attachment.type)}</span>
+                  <span>{getEnumLabel(language, "attachmentVisibility", attachment.visibility)}</span>
+                  <span>{formatFileSize(attachment.sizeBytes, language)}</span>
                   <span>{shortHash(attachment.checksumSha256)}</span>
                 </div>
                 {attachment.description ? <p className="mt-1 text-xs text-slate-500">{attachment.description}</p> : null}
               </div>
               <Button type="button" variant="secondary" className="h-9 shrink-0" onClick={() => void onDownload(attachment)}>
                 <Download className="h-4 w-4" />
-                Скачать
+                {t("common.download")}
               </Button>
             </div>
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">Вложений пока нет.</p>
+        <p className="mt-3 text-sm text-slate-500">{t("attachments.empty")}</p>
       )}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Field label="Файл">
+        <Field label={t("label.file")}>
           <input className={inputClassName("pt-2")} type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
         </Field>
-        <Field label="Тип">
+        <Field label={t("label.type")}>
           <select className={inputClassName()} value={type} onChange={(event) => setType(event.target.value as AttachmentType)}>
-            {attachmentTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+            {attachmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </Field>
-        <Field label="Видимость">
+        <Field label={t("label.visibility")}>
           <select className={inputClassName()} value={visibility} onChange={(event) => setVisibility(event.target.value as AttachmentVisibility)}>
-            {visibilities.map((item) => <option key={item} value={item}>{item}</option>)}
+            {visibilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <span className="mt-1 block text-xs text-slate-500">
-            PRIVATE не попадет в публичный отчет. PUBLIC будет виден покупателю.
+            {selectedVisibility?.description}
           </span>
         </Field>
-        <Field label="Описание">
+        <Field label={t("label.description")}>
           <input className={inputClassName()} value={description} onChange={(event) => setDescription(event.target.value)} />
         </Field>
       </div>
       <Button type="button" variant="secondary" className="mt-3" onClick={() => void onUpload()} disabled={uploading}>
         <Upload className="h-4 w-4" />
-        {uploading ? "Загружаем…" : "Загрузить вложение"}
+        {uploading ? t("attachments.uploading") : t("attachments.upload")}
       </Button>
     </div>
   );
