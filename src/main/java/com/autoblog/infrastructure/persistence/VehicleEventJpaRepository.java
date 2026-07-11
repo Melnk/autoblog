@@ -9,6 +9,8 @@ public interface VehicleEventJpaRepository extends JpaRepository<VehicleEventEnt
 
     Optional<VehicleEventEntity> findTopByVehicle_IdOrderBySequenceNumberDesc(UUID vehicleId);
 
+    Optional<VehicleEventEntity> findFirstByVehicle_IdAndOdometerKmIsNotNullOrderBySequenceNumberDesc(UUID vehicleId);
+
     List<VehicleEventEntity> findByVehicle_IdOrderBySequenceNumberAsc(UUID vehicleId);
 
     Optional<VehicleEventEntity> findByIdAndVehicle_Id(UUID eventId, UUID vehicleId);

@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppShell } from "@/components/layout/app-shell";
 import { EventTimeline } from "@/components/vehicles/event-timeline";
 import { PublicReportActions } from "@/components/vehicles/public-report-actions";
+import { ReminderPanel } from "@/components/vehicles/reminder-panel";
 import { RoleBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, SectionHeader } from "@/components/ui/card";
@@ -113,6 +114,7 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
             <EventTimeline vehicleId={vehicleId} events={events} attachmentsByEvent={attachmentsByEvent} />
           </div>
           <div className="space-y-6">
+            <ReminderPanel vehicleId={vehicleId} />
             <PublicReportActions vehicleId={vehicleId} />
             <Card>
               <h3 className="text-lg font-bold text-white">Hash-chain</h3>

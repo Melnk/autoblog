@@ -14,6 +14,7 @@ import com.autoblog.identity.infrastructure.UserAccountJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
+import com.autoblog.reminder.infrastructure.MaintenanceReminderJpaRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
@@ -95,6 +96,9 @@ class PublicVehicleReportIntegrationTest {
     private PublicVehicleReportJpaRepository publicReports;
 
     @Autowired
+    private MaintenanceReminderJpaRepository reminders;
+
+    @Autowired
     private EventAttachmentJpaRepository attachments;
 
     @Autowired
@@ -109,6 +113,7 @@ class PublicVehicleReportIntegrationTest {
     void cleanDatabase() throws Exception {
         attachments.deleteAll();
         publicReports.deleteAll();
+        reminders.deleteAll();
         vehicleAccess.deleteAll();
         events.deleteAll();
         vehicles.deleteAll();

@@ -14,6 +14,8 @@ import com.autoblog.identity.application.InvalidAuthRequestException;
 import com.autoblog.identity.application.InvalidCredentialsException;
 import com.autoblog.identity.application.UserAccountNotFoundException;
 import com.autoblog.publicreport.domain.PublicReportNotFoundException;
+import com.autoblog.reminder.domain.InvalidMaintenanceReminderException;
+import com.autoblog.reminder.domain.MaintenanceReminderNotFoundException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
@@ -79,7 +81,8 @@ public class GlobalExceptionHandler {
             VehicleEventNotFoundException.class,
             AttachmentNotFoundException.class,
             VehicleAccessNotFoundException.class,
-            UserAccountNotFoundException.class
+            UserAccountNotFoundException.class,
+            MaintenanceReminderNotFoundException.class
     })
     public ResponseEntity<ApiErrorResponse> handleDomainNotFound(RuntimeException exception, HttpServletRequest request) {
         return build(HttpStatus.NOT_FOUND, exception.getMessage(), request, List.of());
@@ -181,6 +184,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidAttachmentException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidAttachment(
             InvalidAttachmentException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getField(), exception.getMessage())
+        ));
+    }
+
+    @ExceptionHandler(InvalidMaintenanceReminderException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidMaintenanceReminder(
+            InvalidMaintenanceReminderException exception,
             HttpServletRequest request
     ) {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, List.of(
@@ -308,6 +321,9 @@ public class GlobalExceptionHandler {
             case "VehicleEventType" -> "event type";
             case "AttachmentType" -> "attachment type";
             case "AttachmentVisibility" -> "attachment visibility";
+            case "ReminderType" -> "reminder type";
+            case "ReminderStatus" -> "reminder status";
+            case "ReminderDueState" -> "reminder due state";
             default -> "value";
         };
     }

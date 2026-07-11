@@ -425,6 +425,84 @@ curl -L -o public-receipt.pdf \
   http://localhost:8080/api/v1/public/reports/{publicToken}/attachments/{attachmentId}
 ```
 
+## Maintenance Reminders
+
+Reminders are planning objects for future service actions. They belong to a vehicle and can be completed or cancelled. A reminder does not become part of the append-only vehicle history until the user actually creates a `VehicleEvent`.
+
+`OWNER` and `EDITOR` can create, complete, and cancel reminders. `VIEWER` can list reminders but cannot modify them.
+
+1. Create a vehicle and add an event with odometer:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/events \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "MAINTENANCE",
+    "eventDate": "2026-07-02",
+    "odometerKm": 127842,
+    "title": "Замена масла"
+  }'
+```
+
+2. Create reminder by date and odometer:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Заменить масло",
+    "description": "Следующая замена масла после ТО",
+    "type": "OIL_CHANGE",
+    "dueDate": "2026-09-01",
+    "dueOdometerKm": 135000
+  }'
+```
+
+3. Create reminder by odometer only:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "title": "Проверить тормоза",
+    "type": "BRAKE_SERVICE",
+    "dueOdometerKm": 128300
+  }'
+```
+
+4. List reminders:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Optional filters:
+
+```bash
+curl 'http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders?status=ACTIVE&dueState=DUE_SOON' \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+5. Complete reminder:
+
+```bash
+curl -X PATCH http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders/{reminderId}/complete \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+6. Cancel reminder:
+
+```bash
+curl -X PATCH http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders/{reminderId}/cancel \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+7. Login as a `VIEWER` and confirm listing works but create/complete/cancel returns `403 Forbidden`.
+
 ## Vehicle Access Control
 
 When a user creates a vehicle, AutoBlog grants that user `OWNER` access automatically.
@@ -536,6 +614,12 @@ FROM vehicle_access
 ORDER BY vehicle_id, created_at;
 ```
 
+```sql
+SELECT vehicle_id, title, type, due_date, due_odometer_km, status, completed_at, cancelled_at
+FROM maintenance_reminders
+ORDER BY vehicle_id, created_at;
+```
+
 ## API
 
 - `POST /api/v1/auth/register`
@@ -550,6 +634,10 @@ ORDER BY vehicle_id, created_at;
 - `POST /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download`
+- `POST /api/v1/vehicles/{vehicleId}/reminders`
+- `GET /api/v1/vehicles/{vehicleId}/reminders`
+- `PATCH /api/v1/vehicles/{vehicleId}/reminders/{reminderId}/complete`
+- `PATCH /api/v1/vehicles/{vehicleId}/reminders/{reminderId}/cancel`
 - `POST /api/v1/vehicles/{vehicleId}/public-report`
 - `POST /api/v1/vehicles/{vehicleId}/access`
 - `GET /api/v1/vehicles/{vehicleId}/access`

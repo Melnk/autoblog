@@ -59,11 +59,13 @@ pnpm lint
 4. Create a vehicle.
 5. Open the vehicle detail page.
 6. Add a maintenance or repair event.
-7. Upload one PUBLIC attachment.
-8. Upload one PRIVATE attachment.
-9. Generate a public report.
-10. Open `/reports/{publicToken}` without logging in.
-11. Verify only the PUBLIC attachment appears in the public report.
+7. Add a maintenance reminder by date or odometer.
+8. Complete or cancel a reminder.
+9. Upload one PUBLIC attachment.
+10. Upload one PRIVATE attachment.
+11. Generate a public report.
+12. Open `/reports/{publicToken}` without logging in.
+13. Verify only the PUBLIC attachment appears in the public report.
 
 ## Language Settings
 
@@ -86,6 +88,10 @@ Open `/settings` to switch the interface language between Russian and English.
 - Events appear in the timeline.
 - Event `title` is required.
 - Attachment upload works.
+- Reminder creation works with date, odometer, or both.
+- Reminder type and due-state labels are localized.
+- Reminder complete/cancel works for OWNER or EDITOR.
+- VIEWER can see reminders but cannot complete/cancel them.
 - PUBLIC attachment appears in public report.
 - PRIVATE attachment does not appear in public report.
 - Public report opens without token.

@@ -1,5 +1,23 @@
 export type VehicleAccessRole = "OWNER" | "EDITOR" | "VIEWER";
 
+export type ReminderType =
+  | "OIL_CHANGE"
+  | "INSURANCE"
+  | "INSPECTION"
+  | "TIRE_SERVICE"
+  | "BRAKE_SERVICE"
+  | "DIAGNOSTIC"
+  | "CUSTOM";
+
+export type ReminderStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
+
+export type ReminderDueState =
+  | "OVERDUE"
+  | "DUE_SOON"
+  | "UPCOMING"
+  | "COMPLETED"
+  | "CANCELLED";
+
 export type AuthResponse = {
   accessToken: string;
   tokenType: "Bearer";
@@ -136,6 +154,23 @@ export type VehicleAccessDto = {
   email: string;
   role: VehicleAccessRole;
   createdAt: string;
+};
+
+export type MaintenanceReminder = {
+  id: string;
+  vehicleId: string;
+  title: string;
+  description?: string | null;
+  type: ReminderType;
+  dueDate?: string | null;
+  dueOdometerKm?: number | null;
+  status: ReminderStatus;
+  dueState: ReminderDueState;
+  latestOdometerKm?: number | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string | null;
+  cancelledAt?: string | null;
 };
 
 export type ApiErrorDetail = {
