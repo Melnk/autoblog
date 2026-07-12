@@ -4,6 +4,8 @@ import type {
   ReminderDueState,
   ReminderStatus,
   ReminderType,
+  TrustScoreLevel,
+  TrustSignalImpact,
   VehicleAccessRole,
   VehicleEventType
 } from "@/lib/api/types";
@@ -22,7 +24,9 @@ type EnumGroup =
   | "userAccountStatus"
   | "reminderType"
   | "reminderStatus"
-  | "reminderDueState";
+  | "reminderDueState"
+  | "trustScoreLevel"
+  | "trustSignalImpact";
 
 export const VEHICLE_EVENT_TYPE_OPTIONS = [
   "MAINTENANCE",
@@ -64,6 +68,8 @@ export const REMINDER_DUE_STATE_OPTIONS = [
   "COMPLETED",
   "CANCELLED"
 ] as const satisfies readonly ReminderDueState[];
+export const TRUST_SCORE_LEVEL_OPTIONS = ["HIGH", "MEDIUM", "LOW", "UNKNOWN"] as const satisfies readonly TrustScoreLevel[];
+export const TRUST_SIGNAL_IMPACT_OPTIONS = ["POSITIVE", "NEGATIVE", "NEUTRAL"] as const satisfies readonly TrustSignalImpact[];
 
 const enumLabels: Record<Language, Record<EnumGroup, Record<string, string>>> = {
   ru: {
@@ -127,6 +133,17 @@ const enumLabels: Record<Language, Record<EnumGroup, Record<string, string>>> = 
       UPCOMING: "Запланировано",
       COMPLETED: "Выполнено",
       CANCELLED: "Отменено"
+    },
+    trustScoreLevel: {
+      HIGH: "Высокий",
+      MEDIUM: "Средний",
+      LOW: "Низкий",
+      UNKNOWN: "Недостаточно данных"
+    },
+    trustSignalImpact: {
+      POSITIVE: "Плюс",
+      NEGATIVE: "Риск",
+      NEUTRAL: "Инфо"
     }
   },
   en: {
@@ -190,6 +207,17 @@ const enumLabels: Record<Language, Record<EnumGroup, Record<string, string>>> = 
       UPCOMING: "Upcoming",
       COMPLETED: "Completed",
       CANCELLED: "Cancelled"
+    },
+    trustScoreLevel: {
+      HIGH: "High",
+      MEDIUM: "Medium",
+      LOW: "Low",
+      UNKNOWN: "Not enough data"
+    },
+    trustSignalImpact: {
+      POSITIVE: "Positive",
+      NEGATIVE: "Risk",
+      NEUTRAL: "Info"
     }
   }
 };

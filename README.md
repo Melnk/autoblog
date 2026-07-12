@@ -503,6 +503,57 @@ curl -X PATCH http://localhost:8080/api/v1/vehicles/{vehicleId}/reminders/{remin
 
 7. Login as a `VIEWER` and confirm listing works but create/complete/cancel returns `403 Forbidden`.
 
+## Trust Score
+
+Trust Score v0 is a rule-based, explainable vehicle history quality score. It is not AI, not machine learning, and not a guarantee. It is an indicator that helps an owner or buyer understand how complete and trustworthy the current AutoBlog history looks.
+
+The score is computed on demand from existing data:
+
+- event count
+- evidence attachments
+- public evidence attachments
+- hash-chain validity
+- odometer consistency
+- recent history activity
+- maintenance reminders
+- overdue reminders
+
+Private trust score:
+
+```bash
+curl http://localhost:8080/api/v1/vehicles/{vehicleId}/trust-score \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+The response includes `score`, `level`, `summary`, `metrics`, and explainable `signals`:
+
+```json
+{
+  "score": 85,
+  "level": "HIGH",
+  "summary": "История автомобиля выглядит хорошо подтвержденной.",
+  "signals": [
+    {
+      "code": "HASH_CHAIN_VALID",
+      "impact": "POSITIVE",
+      "points": 15,
+      "message": "Event hash-chain is valid"
+    }
+  ]
+}
+```
+
+The public report also includes `trustScore`, but the public trust score does not expose the internal vehicle UUID.
+
+Manual Trust Score flow:
+
+1. Create a vehicle with no events and check `/trust-score`; it should be `UNKNOWN` with a `NO_EVENTS` signal.
+2. Add several events with increasing `odometerKm`.
+3. Upload a `PUBLIC` attachment.
+4. Add an overdue reminder.
+5. Check `/trust-score` and verify score, metrics, and signals.
+6. Create/open public report and verify `trustScore` appears there.
+
 ## Vehicle Access Control
 
 When a user creates a vehicle, AutoBlog grants that user `OWNER` access automatically.
@@ -634,6 +685,7 @@ ORDER BY vehicle_id, created_at;
 - `POST /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments`
 - `GET /api/v1/vehicles/{vehicleId}/events/{eventId}/attachments/{attachmentId}/download`
+- `GET /api/v1/vehicles/{vehicleId}/trust-score`
 - `POST /api/v1/vehicles/{vehicleId}/reminders`
 - `GET /api/v1/vehicles/{vehicleId}/reminders`
 - `PATCH /api/v1/vehicles/{vehicleId}/reminders/{reminderId}/complete`

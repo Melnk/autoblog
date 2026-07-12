@@ -10,6 +10,8 @@ export {
   REMINDER_DUE_STATE_OPTIONS,
   REMINDER_STATUS_OPTIONS,
   REMINDER_TYPE_OPTIONS,
+  TRUST_SCORE_LEVEL_OPTIONS,
+  TRUST_SIGNAL_IMPACT_OPTIONS,
   VEHICLE_ACCESS_ROLE_OPTIONS,
   VEHICLE_EVENT_TYPE_OPTIONS,
   getAttachmentTypeOptions,
@@ -18,3 +20,8 @@ export {
   getReminderTypeOptions,
   getVehicleEventTypeOptions
 } from "@/lib/i18n/enums";
+export {
+  getTrustScoreSummary,
+  getTrustSignalLabel,
+  getTrustSignalMessage
+} from "@/lib/i18n/trust";

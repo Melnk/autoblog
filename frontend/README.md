@@ -61,11 +61,24 @@ pnpm lint
 6. Add a maintenance or repair event.
 7. Add a maintenance reminder by date or odometer.
 8. Complete or cancel a reminder.
-9. Upload one PUBLIC attachment.
-10. Upload one PRIVATE attachment.
-11. Generate a public report.
-12. Open `/reports/{publicToken}` without logging in.
-13. Verify only the PUBLIC attachment appears in the public report.
+9. Check the vehicle Trust Score card.
+10. Upload one PUBLIC attachment.
+11. Upload one PRIVATE attachment.
+12. Generate a public report.
+13. Open `/reports/{publicToken}` without logging in.
+14. Verify Trust Score appears in the public report.
+15. Verify only the PUBLIC attachment appears in the public report.
+
+## Trust Score
+
+Trust Score v0 is a rule-based, explainable score. It is not AI and it is not a guarantee.
+
+The frontend displays Trust Score:
+
+- on private vehicle detail pages;
+- on public reports sent to a buyer.
+
+The score uses backend signals for event count, evidence attachments, hash-chain validity, odometer consistency, recency, reminders, and overdue reminders. Known signal codes are localized in Russian and English; unknown codes fall back to the backend message.
 
 ## Language Settings
 
@@ -92,6 +105,9 @@ Open `/settings` to switch the interface language between Russian and English.
 - Reminder type and due-state labels are localized.
 - Reminder complete/cancel works for OWNER or EDITOR.
 - VIEWER can see reminders but cannot complete/cancel them.
+- Trust Score appears on vehicle detail.
+- Trust Score signals and metrics are readable.
+- Trust Score appears on public report without login.
 - PUBLIC attachment appears in public report.
 - PRIVATE attachment does not appear in public report.
 - Public report opens without token.

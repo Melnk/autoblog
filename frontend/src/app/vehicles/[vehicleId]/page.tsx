@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppShell } from "@/components/layout/app-shell";
+import { TrustScoreCard } from "@/components/trust/trust-score-card";
 import { EventTimeline } from "@/components/vehicles/event-timeline";
 import { PublicReportActions } from "@/components/vehicles/public-report-actions";
 import { ReminderPanel } from "@/components/vehicles/reminder-panel";
@@ -16,8 +17,8 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { listAttachments } from "@/lib/api/attachments";
 import { readableApiError } from "@/lib/api/client";
 import { listEvents } from "@/lib/api/events";
-import type { EventAttachmentDto, VehicleAccessRole, VehicleDto, VehicleEventDto } from "@/lib/api/types";
-import { getVehicle, listVehicleAccess } from "@/lib/api/vehicles";
+import type { EventAttachmentDto, TrustScoreResponse, VehicleAccessRole, VehicleDto, VehicleEventDto } from "@/lib/api/types";
+import { getVehicle, getVehicleTrustScore, listVehicleAccess } from "@/lib/api/vehicles";
 import { useLanguage } from "@/lib/i18n";
 
 export default function VehicleDetailPage({
@@ -42,6 +43,9 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
   const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
   const [events, setEvents] = useState<VehicleEventDto[]>([]);
   const [attachmentsByEvent, setAttachmentsByEvent] = useState<Record<string, EventAttachmentDto[]>>({});
+  const [trustScore, setTrustScore] = useState<TrustScoreResponse | null>(null);
+  const [trustScoreError, setTrustScoreError] = useState<string | null>(null);
+  const [trustScoreLoading, setTrustScoreLoading] = useState(true);
   const [role, setRole] = useState<VehicleAccessRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,13 +53,26 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
   useEffect(() => {
     async function load() {
       try {
-        const [vehicleResponse, eventResponse] = await Promise.all([
+        setTrustScoreLoading(true);
+        setTrustScoreError(null);
+        const trustScoreRequest = getVehicleTrustScore(vehicleId)
+          .then((response) => ({ response }))
+          .catch((requestError) => ({ requestError }));
+        const [vehicleResponse, eventResponse, trustScoreResult] = await Promise.all([
           getVehicle(vehicleId),
-          listEvents(vehicleId)
+          listEvents(vehicleId),
+          trustScoreRequest
         ]);
         const sortedEvents = [...eventResponse].sort((left, right) => left.sequenceNumber - right.sequenceNumber);
         setVehicle(vehicleResponse);
         setEvents(sortedEvents);
+        if ("response" in trustScoreResult) {
+          setTrustScore(trustScoreResult.response);
+        } else {
+          setTrustScore(null);
+          setTrustScoreError(readableApiError(trustScoreResult.requestError, language));
+        }
+        setTrustScoreLoading(false);
         const attachmentEntries = await Promise.all(
           sortedEvents.map(async (event) => [event.id, await listAttachments(vehicleId, event.id)] as const)
         );
@@ -69,6 +86,7 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
         }
       } catch (requestError) {
         setError(readableApiError(requestError, language));
+        setTrustScoreLoading(false);
       } finally {
         setLoading(false);
       }
@@ -111,6 +129,9 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
               </div>
               {role ? <div className="mt-4"><RoleBadge role={role} /></div> : null}
             </Card>
+            <div className="mb-6">
+              <TrustScoreCard trustScore={trustScore} loading={trustScoreLoading} error={trustScoreError} />
+            </div>
             <EventTimeline vehicleId={vehicleId} events={events} attachmentsByEvent={attachmentsByEvent} />
           </div>
           <div className="space-y-6">

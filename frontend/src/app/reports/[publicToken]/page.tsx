@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle2, Coins, Download, Gauge, MapPin, XCircle } f
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { TrustScoreCard } from "@/components/trust/trust-score-card";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -74,6 +75,10 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
         <SummaryCard label={t("label.period")} value={`${formatDate(report.summary.firstEventDate, language)} — ${formatDate(report.summary.lastEventDate, language)}`} />
         <SummaryCard label={t("label.latestOdometer")} value={formatKm(report.summary.latestOdometerKm, language)} />
         <SummaryCard label={t("label.knownCosts")} value={formatMoney(report.summary.totalKnownCostAmount, report.summary.costCurrency, language)} />
+      </div>
+
+      <div className="mb-8">
+        <TrustScoreCard trustScore={report.trustScore} publicMode />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">

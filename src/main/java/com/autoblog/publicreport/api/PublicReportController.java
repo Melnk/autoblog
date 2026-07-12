@@ -70,6 +70,35 @@ public class PublicReportController {
                                         "costCurrency": "RUB",
                                         "hashChainValid": true
                                       },
+                                      "trustScore": {
+                                        "score": 85,
+                                        "level": "HIGH",
+                                        "calculatedAt": "2026-07-04T12:00:00Z",
+                                        "summary": "История автомобиля выглядит хорошо подтвержденной.",
+                                        "signals": [
+                                          {
+                                            "code": "HASH_CHAIN_VALID",
+                                            "impact": "POSITIVE",
+                                            "points": 15,
+                                            "message": "Event hash-chain is valid"
+                                          }
+                                        ],
+                                        "metrics": {
+                                          "eventsCount": 2,
+                                          "eventsWithAttachmentsCount": 1,
+                                          "publicAttachmentsCount": 1,
+                                          "privateAttachmentsCount": 0,
+                                          "odometerEventsCount": 2,
+                                          "latestOdometerKm": 120500,
+                                          "totalKnownCostAmount": 8500,
+                                          "hashChainValid": true,
+                                          "odometerConsistent": true,
+                                          "firstEventDate": "2026-07-02",
+                                          "lastEventDate": "2026-07-10",
+                                          "activeRemindersCount": 1,
+                                          "overdueRemindersCount": 0
+                                        }
+                                      },
                                       "events": [
                                         {
                                           "sequenceNumber": 1,

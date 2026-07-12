@@ -10,6 +10,8 @@ public interface EventAttachmentJpaRepository extends JpaRepository<EventAttachm
 
     List<EventAttachmentEntity> findByEvent_IdOrderByCreatedAtAsc(UUID eventId);
 
+    List<EventAttachmentEntity> findByVehicle_Id(UUID vehicleId);
+
     List<EventAttachmentEntity> findByEvent_IdInAndVisibilityOrderByCreatedAtAsc(
             List<UUID> eventIds,
             AttachmentVisibility visibility

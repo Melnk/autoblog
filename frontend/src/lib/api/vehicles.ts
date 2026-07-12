@@ -1,5 +1,5 @@
 import { apiRequest } from "@/lib/api/client";
-import type { PublicReportMetadataDto, VehicleAccessDto, VehicleAccessRole, VehicleDto } from "@/lib/api/types";
+import type { PublicReportMetadataDto, TrustScoreResponse, VehicleAccessDto, VehicleAccessRole, VehicleDto } from "@/lib/api/types";
 
 export type CreateVehiclePayload = {
   vin: string;
@@ -19,6 +19,10 @@ export function listVehicles() {
 
 export function getVehicle(vehicleId: string) {
   return apiRequest<VehicleDto>(`/api/v1/vehicles/${vehicleId}`);
+}
+
+export function getVehicleTrustScore(vehicleId: string) {
+  return apiRequest<TrustScoreResponse>(`/api/v1/vehicles/${vehicleId}/trust-score`);
 }
 
 export function createVehicle(payload: CreateVehiclePayload) {

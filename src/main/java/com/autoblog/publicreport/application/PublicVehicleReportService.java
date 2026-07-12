@@ -14,6 +14,7 @@ import com.autoblog.publicreport.domain.PublicReportNotFoundException;
 import com.autoblog.publicreport.domain.PublicReportStatus;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportEntity;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportJpaRepository;
+import com.autoblog.trust.application.TrustScoreService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -39,6 +40,7 @@ public class PublicVehicleReportService {
     private final QrCodeSvgService qrCodeSvgService;
     private final EventAttachmentService attachments;
     private final VehicleAccessService vehicleAccess;
+    private final TrustScoreService trustScores;
 
     public PublicVehicleReportService(
             PublicVehicleReportJpaRepository reports,
@@ -50,7 +52,8 @@ public class PublicVehicleReportService {
             CanonicalJsonService canonicalJsonService,
             QrCodeSvgService qrCodeSvgService,
             EventAttachmentService attachments,
-            VehicleAccessService vehicleAccess
+            VehicleAccessService vehicleAccess,
+            TrustScoreService trustScores
     ) {
         this.reports = reports;
         this.vehicles = vehicles;
@@ -62,6 +65,7 @@ public class PublicVehicleReportService {
         this.qrCodeSvgService = qrCodeSvgService;
         this.attachments = attachments;
         this.vehicleAccess = vehicleAccess;
+        this.trustScores = trustScores;
     }
 
     @Transactional
@@ -92,6 +96,7 @@ public class PublicVehicleReportService {
                 toInfoView(report),
                 toPublicVehicleView(vehicle),
                 summary(eventEntities),
+                trustScores.calculateForPublicVehicle(vehicle.getId()),
                 eventEntities.stream()
                         .map(event -> toPublicEventView(
                                 event,

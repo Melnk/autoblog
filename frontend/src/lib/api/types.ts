@@ -18,6 +18,10 @@ export type ReminderDueState =
   | "COMPLETED"
   | "CANCELLED";
 
+export type TrustScoreLevel = "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+
+export type TrustSignalImpact = "POSITIVE" | "NEGATIVE" | "NEUTRAL";
+
 export type AuthResponse = {
   accessToken: string;
   tokenType: "Bearer";
@@ -119,6 +123,7 @@ export type PublicReportDto = {
   };
   vehicle: Omit<VehicleDto, "id" | "createdAt" | "updatedAt" | "role">;
   summary: PublicReportSummaryDto;
+  trustScore: TrustScoreResponse;
   events: PublicReportEventDto[];
 };
 
@@ -171,6 +176,39 @@ export type MaintenanceReminder = {
   updatedAt: string;
   completedAt?: string | null;
   cancelledAt?: string | null;
+};
+
+export type TrustScoreSignal = {
+  code: string;
+  impact: TrustSignalImpact;
+  points: number;
+  message: string;
+};
+
+export type TrustScoreMetrics = {
+  eventsCount: number;
+  eventsWithAttachmentsCount: number;
+  publicAttachmentsCount: number;
+  privateAttachmentsCount: number;
+  odometerEventsCount: number;
+  latestOdometerKm?: number | null;
+  totalKnownCostAmount?: number | null;
+  hashChainValid: boolean;
+  odometerConsistent: boolean;
+  firstEventDate?: string | null;
+  lastEventDate?: string | null;
+  activeRemindersCount: number;
+  overdueRemindersCount: number;
+};
+
+export type TrustScoreResponse = {
+  vehicleId?: string;
+  score: number;
+  level: TrustScoreLevel;
+  calculatedAt: string;
+  summary: string;
+  signals: TrustScoreSignal[];
+  metrics: TrustScoreMetrics;
 };
 
 export type ApiErrorDetail = {
