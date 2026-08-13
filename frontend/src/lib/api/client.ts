@@ -1,15 +1,13 @@
-import { clearAccessToken, getAccessToken } from "@/lib/auth-token";
 import type { ApiErrorBody, ApiErrorDetail } from "@/lib/api/types";
 import { DEFAULT_LANGUAGE, translations, type Language } from "@/lib/i18n/translations";
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8080";
+export const API_BASE_URL = "/api/bff";
 const IS_DEVELOPMENT = process.env.NODE_ENV === "development";
 
 type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   formData?: FormData;
-  auth?: boolean;
   redirectOnUnauthorized?: boolean;
   headers?: HeadersInit;
 };
@@ -38,24 +36,17 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  const auth = options.auth ?? true;
   const method = options.method ?? "GET";
   const url = `${API_BASE_URL}${path}`;
   const body = buildBody(options, headers);
-
-  if (auth) {
-    const token = getAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
-    }
-  }
 
   let response: Response;
   try {
     response = await fetch(url, {
       method,
       headers,
-      body
+      body,
+      credentials: "same-origin"
     });
   } catch (error) {
     if (IS_DEVELOPMENT) {
@@ -125,7 +116,6 @@ async function handleError(
   }
 
   if (response.status === 401) {
-    clearAccessToken();
     if (context.redirectOnUnauthorized && typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
       window.location.assign("/login");
     }

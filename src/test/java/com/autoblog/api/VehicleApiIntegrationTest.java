@@ -3,6 +3,7 @@ package com.autoblog.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -19,6 +20,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -259,6 +263,92 @@ class VehicleApiIntegrationTest {
     }
 
     @Test
+    void paginatedQueriesReturnMetadataAndRejectUnsafePageSizes() throws Exception {
+        String firstVehicleId = createVehicle(README_VEHICLE_REQUEST);
+        createVehicle(README_VEHICLE_REQUEST.replace("XTA217030C0000000", "XTA217030C0000001"));
+        addEvent(firstVehicleId, README_MAINTENANCE_EVENT_REQUEST);
+        addEvent(firstVehicleId, README_REPAIR_EVENT_REQUEST);
+
+        mockMvc.perform(get("/api/v2/vehicles")
+                        .param("page", "0")
+                        .param("size", "1")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].role").value("OWNER"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.first").value(true))
+                .andExpect(jsonPath("$.last").value(false));
+
+        mockMvc.perform(get("/api/v2/vehicles/{vehicleId}/events", firstVehicleId)
+                        .param("page", "1")
+                        .param("size", "1")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].sequenceNumber").value(2))
+                .andExpect(jsonPath("$.last").value(true));
+
+        mockMvc.perform(get("/api/v2/vehicles")
+                        .param("size", "101")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.status").value(422))
+                .andExpect(jsonPath("$.details[0].field").value("size"));
+    }
+
+    @Test
+    void actuatorHealthIsAvailableWithoutAuthentication() throws Exception {
+        mockMvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void generatedOpenApiContainsPaginatedAndPublicReportLifecycleEndpoints() throws Exception {
+        String response = mockMvc.perform(get("/v3/api-docs"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode paths = objectMapper.readTree(response).get("paths");
+
+        assertThat(paths.has("/api/v2/vehicles")).isTrue();
+        assertThat(paths.has("/api/v2/vehicles/{vehicleId}/events")).isTrue();
+        assertThat(paths.has("/api/v1/vehicles/{vehicleId}/public-report/rotations")).isTrue();
+        assertThat(paths.get("/api/v1/vehicles/{vehicleId}/public-report").has("delete")).isTrue();
+    }
+
+    @Test
+    void concurrentEventsReceiveUniqueSequentialNumbers() throws Exception {
+        String vehicleId = createVehicle(README_VEHICLE_REQUEST);
+        var executor = Executors.newFixedThreadPool(2);
+        var ready = new CountDownLatch(2);
+        var start = new CountDownLatch(1);
+
+        try {
+            Future<Integer> first = executor.submit(() -> createEventConcurrently(vehicleId, ready, start));
+            Future<Integer> second = executor.submit(() -> createEventConcurrently(vehicleId, ready, start));
+            ready.await();
+            start.countDown();
+
+            assertThat(first.get()).isEqualTo(201);
+            assertThat(second.get()).isEqualTo(201);
+        } finally {
+            executor.shutdownNow();
+        }
+
+        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].sequenceNumber").value(1))
+                .andExpect(jsonPath("$[1].sequenceNumber").value(2));
+    }
+
+    @Test
     void invalidEventTypeReturnsFieldLevelError() throws Exception {
         String vehicleId = createVehicle(README_VEHICLE_REQUEST);
 
@@ -338,6 +428,22 @@ class VehicleApiIntegrationTest {
                 .getContentAsString(StandardCharsets.UTF_8);
 
         return objectMapper.readTree(response);
+    }
+
+    private int createEventConcurrently(
+            String vehicleId,
+            CountDownLatch ready,
+            CountDownLatch start
+    ) throws Exception {
+        ready.countDown();
+        start.await();
+        return mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/events", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(README_MAINTENANCE_EVENT_REQUEST))
+                .andReturn()
+                .getResponse()
+                .getStatus();
     }
 
     private String register(String email) throws Exception {

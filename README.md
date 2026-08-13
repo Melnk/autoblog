@@ -83,8 +83,11 @@ http://localhost:3000
 Required frontend env var:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+AUTOBLOG_BACKEND_URL=http://localhost:8080
+AUTOBLOG_PUBLIC_ORIGIN=http://localhost:3000
 ```
+
+The value is server-only. The browser talks to the same-origin Next.js BFF and never reads the backend JWT.
 
 ## API Contract
 
@@ -347,6 +350,20 @@ curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report \
 
 Response contains `publicToken` and `publicUrl`. Calling the same endpoint again returns the same active report instead of creating duplicates.
 
+Rotate the active link and invalidate the previous token:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report/rotations \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Disable the active link (the operation is idempotent):
+
+```bash
+curl -X DELETE http://localhost:8080/api/v1/vehicles/{vehicleId}/public-report \
+  -H "Authorization: Bearer $TOKEN"
+```
+
 5. Get public report by token:
 
 ```bash
@@ -374,7 +391,7 @@ Allowed content types:
 - `image/webp`
 - `application/pdf`
 
-Local files are stored under `./data/uploads` by default. This local storage is temporary and intentionally isolated behind an `AttachmentStorage` abstraction so it can be replaced with S3/MinIO later.
+Local and test profiles store files under `./data/uploads` by default. The production profile requires the S3 adapter; `compose.prod.yml` provides an S3-compatible MinIO service. If attachment metadata rolls back, the already-written object is removed automatically.
 
 Upload a public receipt PDF to the first event:
 
@@ -691,6 +708,8 @@ ORDER BY vehicle_id, created_at;
 - `PATCH /api/v1/vehicles/{vehicleId}/reminders/{reminderId}/complete`
 - `PATCH /api/v1/vehicles/{vehicleId}/reminders/{reminderId}/cancel`
 - `POST /api/v1/vehicles/{vehicleId}/public-report`
+- `POST /api/v1/vehicles/{vehicleId}/public-report/rotations`
+- `DELETE /api/v1/vehicles/{vehicleId}/public-report`
 - `POST /api/v1/vehicles/{vehicleId}/access`
 - `GET /api/v1/vehicles/{vehicleId}/access`
 - `DELETE /api/v1/vehicles/{vehicleId}/access/{userId}`
@@ -698,4 +717,28 @@ ORDER BY vehicle_id, created_at;
 - `GET /api/v1/public/reports/{publicToken}/qr`
 - `GET /api/v1/public/reports/{publicToken}/attachments/{attachmentId}`
 
+Backward-compatible v1 collection endpoints still return arrays. New clients should use the paginated v2 queries:
+
+- `GET /api/v2/vehicles?page=0&size=20`
+- `GET /api/v2/vehicles/{vehicleId}/events?page=0&size=20`
+- `GET /api/v2/vehicles/{vehicleId}/events/{eventId}/attachments?page=0&size=20`
+- `GET /api/v2/vehicles/{vehicleId}/reminders?page=0&size=20`
+- `GET /api/v2/vehicles/{vehicleId}/access?page=0&size=20`
+
+The maximum page size is 100. Invalid page parameters return `422` with field details.
+
 Vehicle events are append-only. There are no update or delete endpoints for vehicle events in this stage.
+
+## Production reference
+
+Copy `.env.prod.example` to `.env.prod`, replace every sample secret and origin, then run behind a TLS reverse proxy:
+
+```bash
+docker compose --env-file .env.prod -f compose.prod.yml up -d --build
+```
+
+Only Next.js publishes port `3000`. PostgreSQL, MinIO/S3, Spring Boot, the management port, and Prometheus stay on the internal Compose network. Spring Boot readiness is at `/actuator/health/readiness`; Prometheus scrapes `/actuator/prometheus` on management port `9091`.
+
+GitHub Actions runs backend tests, frontend lint/tests/build, and container builds for pull requests and `main`. A `v*` tag publishes backend and frontend images to GHCR. Deployment from the registry to a real host or orchestrator is intentionally environment-specific.
+
+See [production architecture](docs/architecture/production-hardening.md) for boundaries and failure-handling decisions.

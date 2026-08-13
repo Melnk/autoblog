@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName, textareaClassName } from "@/components/ui/form";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { ApiError, readableApiError } from "@/lib/api/client";
 import {
   cancelVehicleReminder,
@@ -54,7 +55,7 @@ const dueStateStyles: Record<ReminderDueState, string> = {
   CANCELLED: "border-slate-600 bg-slate-800 text-slate-300"
 };
 
-export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
+export function ReminderPanel({ vehicleId, canEdit }: { vehicleId: string; canEdit: boolean }) {
   const { language, t } = useLanguage();
   const [reminders, setReminders] = useState<MaintenanceReminder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,6 +63,8 @@ export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const reminderTypeOptions = getReminderTypeOptions(language);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
@@ -76,9 +79,10 @@ export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
   });
 
   const refresh = useCallback(async () => {
-    const response = await listVehicleReminders(vehicleId);
-    setReminders(response);
-  }, [vehicleId]);
+    const response = await listVehicleReminders(vehicleId, page);
+    setReminders(response.items);
+    setTotalPages(response.totalPages);
+  }, [page, vehicleId]);
 
   useEffect(() => {
     async function load() {
@@ -146,10 +150,12 @@ export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
           </div>
           <p className="mt-1 text-sm text-slate-400">{t("reminders.emptyDescription")}</p>
         </div>
-        <Button type="button" className="h-9 shrink-0 px-3" onClick={() => setFormOpen((value) => !value)}>
-          <Plus className="h-4 w-4" />
-          {t("common.add")}
-        </Button>
+        {canEdit ? (
+          <Button type="button" className="h-9 shrink-0 px-3" onClick={() => setFormOpen((value) => !value)}>
+            <Plus className="h-4 w-4" />
+            {t("common.add")}
+          </Button>
+        ) : null}
       </div>
 
       <div className="mb-4 grid grid-cols-3 gap-2">
@@ -168,7 +174,7 @@ export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
         </div>
       ) : null}
 
-      {formOpen ? (
+      {canEdit && formOpen ? (
         <form className="mb-5 rounded-xl border border-slate-800 bg-black/20 p-4" onSubmit={handleSubmit(onSubmit)}>
           <h4 className="mb-3 text-sm font-semibold text-white">{t("reminders.new")}</h4>
           <div className="grid gap-3">
@@ -219,10 +225,12 @@ export function ReminderPanel({ vehicleId }: { vehicleId: string }) {
               actionLoading={actionLoading}
               onComplete={onComplete}
               onCancel={onCancel}
+              canEdit={canEdit}
             />
           ))}
         </div>
       )}
+      <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
     </Card>
   );
 }
@@ -231,12 +239,14 @@ function ReminderCard({
   reminder,
   actionLoading,
   onComplete,
-  onCancel
+  onCancel,
+  canEdit
 }: {
   reminder: MaintenanceReminder;
   actionLoading: string | null;
   onComplete: (reminderId: string) => Promise<void>;
   onCancel: (reminderId: string) => Promise<void>;
+  canEdit: boolean;
 }) {
   const { language, t } = useLanguage();
   const isActive = reminder.status === "ACTIVE";
@@ -263,7 +273,7 @@ function ReminderCard({
         <Metric label={t("label.status")} value={getEnumLabel(language, "reminderStatus", reminder.status)} />
       </div>
 
-      {isActive ? (
+      {isActive && canEdit ? (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             type="button"

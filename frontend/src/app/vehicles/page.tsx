@@ -9,6 +9,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { Card, SectionHeader } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { inputClassName } from "@/components/ui/form";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { listVehicles } from "@/lib/api/vehicles";
 import type { VehicleDto } from "@/lib/api/types";
 import { readableApiError } from "@/lib/api/client";
@@ -27,6 +28,8 @@ export default function VehiclesPage() {
 function VehiclesContent() {
   const [vehicles, setVehicles] = useState<VehicleDto[]>([]);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { language, t } = useLanguage();
@@ -34,7 +37,10 @@ function VehiclesContent() {
   useEffect(() => {
     async function load() {
       try {
-        setVehicles(await listVehicles());
+        setLoading(true);
+        const response = await listVehicles(page);
+        setVehicles(response.items);
+        setTotalPages(response.totalPages);
       } catch (requestError) {
         setError(readableApiError(requestError, language));
       } finally {
@@ -43,7 +49,7 @@ function VehiclesContent() {
     }
 
     void load();
-  }, [language]);
+  }, [language, page]);
 
   const filteredVehicles = vehicles.filter((vehicle) => matchesVehicle(vehicle, query));
 
@@ -87,6 +93,7 @@ function VehiclesContent() {
               {filteredVehicles.map((vehicle) => <VehicleCard key={vehicle.id} vehicle={vehicle} />)}
             </div>
           )}
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
     </div>

@@ -4,11 +4,15 @@ import com.autoblog.attachment.domain.AttachmentVisibility;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface EventAttachmentJpaRepository extends JpaRepository<EventAttachmentEntity, UUID> {
 
     List<EventAttachmentEntity> findByEvent_IdOrderByCreatedAtAsc(UUID eventId);
+
+    Page<EventAttachmentEntity> findByEvent_Id(UUID eventId, Pageable pageable);
 
     List<EventAttachmentEntity> findByVehicle_Id(UUID vehicleId);
 

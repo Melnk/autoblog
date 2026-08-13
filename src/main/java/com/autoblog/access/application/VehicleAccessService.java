@@ -13,6 +13,8 @@ import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
 import com.autoblog.security.CurrentUser;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,10 +69,19 @@ public class VehicleAccessService {
 
     @Transactional(readOnly = true)
     public List<VehicleEntity> accessibleVehicles() {
-        UUID userId = currentUser.requireUserId();
-        return access.findByUser_IdOrderByCreatedAtAsc(userId).stream()
+        return accessibleVehicleEntries().stream()
                 .map(VehicleAccessEntity::getVehicle)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<VehicleAccessEntity> accessibleVehicleEntries() {
+        return access.findByUser_IdOrderByCreatedAtAsc(currentUser.requireUserId());
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VehicleAccessEntity> accessibleVehicleEntries(Pageable pageable) {
+        return access.findByUser_Id(currentUser.requireUserId(), pageable);
     }
 
     @Transactional
@@ -105,6 +116,12 @@ public class VehicleAccessService {
         return access.findByVehicle_IdOrderByCreatedAtAsc(vehicleId).stream()
                 .map(this::toView)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VehicleAccessView> listAccess(UUID vehicleId, Pageable pageable) {
+        requireOwnerAccess(vehicleId);
+        return access.findByVehicle_Id(vehicleId, pageable).map(this::toView);
     }
 
     @Transactional

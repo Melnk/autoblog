@@ -1,5 +1,12 @@
 import { apiRequest } from "@/lib/api/client";
-import type { PublicReportMetadataDto, TrustScoreResponse, VehicleAccessDto, VehicleAccessRole, VehicleDto } from "@/lib/api/types";
+import type {
+  PagedResponse,
+  PublicReportMetadataDto,
+  TrustScoreResponse,
+  VehicleAccessDto,
+  VehicleAccessRole,
+  VehicleDto
+} from "@/lib/api/types";
 
 export type CreateVehiclePayload = {
   vin: string;
@@ -13,8 +20,8 @@ export type CreateVehiclePayload = {
   market?: string;
 };
 
-export function listVehicles() {
-  return apiRequest<VehicleDto[]>("/api/v1/vehicles");
+export function listVehicles(page = 0, size = 20) {
+  return apiRequest<PagedResponse<VehicleDto>>(`/api/v2/vehicles?page=${page}&size=${size}`);
 }
 
 export function getVehicle(vehicleId: string) {
@@ -38,8 +45,28 @@ export function createPublicReport(vehicleId: string) {
   });
 }
 
-export function listVehicleAccess(vehicleId: string) {
-  return apiRequest<VehicleAccessDto[]>(`/api/v1/vehicles/${vehicleId}/access`);
+export function disablePublicReport(vehicleId: string) {
+  return apiRequest<void>(`/api/v1/vehicles/${vehicleId}/public-report`, {
+    method: "DELETE"
+  });
+}
+
+export function rotatePublicReport(vehicleId: string) {
+  return apiRequest<PublicReportMetadataDto>(`/api/v1/vehicles/${vehicleId}/public-report/rotations`, {
+    method: "POST"
+  });
+}
+
+export function listVehicleAccess(vehicleId: string, page = 0, size = 20) {
+  return apiRequest<PagedResponse<VehicleAccessDto>>(
+    `/api/v2/vehicles/${vehicleId}/access?page=${page}&size=${size}`
+  );
+}
+
+export function revokeVehicleAccess(vehicleId: string, userId: string) {
+  return apiRequest<void>(`/api/v1/vehicles/${vehicleId}/access/${userId}`, {
+    method: "DELETE"
+  });
 }
 
 export function grantVehicleAccess(vehicleId: string, email: string, role: Exclude<VehicleAccessRole, "OWNER">) {

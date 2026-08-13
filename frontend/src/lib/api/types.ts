@@ -22,11 +22,19 @@ export type TrustScoreLevel = "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
 
 export type TrustSignalImpact = "POSITIVE" | "NEGATIVE" | "NEUTRAL";
 
-export type AuthResponse = {
-  accessToken: string;
-  tokenType: "Bearer";
+export type AuthSessionResponse = {
   expiresInSeconds: number;
   user: UserDto;
+};
+
+export type PagedResponse<T> = {
+  items: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
 };
 
 export type UserDto = {
@@ -48,7 +56,7 @@ export type VehicleDto = {
   market: string;
   createdAt: string;
   updatedAt: string;
-  role?: VehicleAccessRole;
+  role: VehicleAccessRole;
 };
 
 export type VehicleEventType =

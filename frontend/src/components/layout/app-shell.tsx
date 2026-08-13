@@ -63,8 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => {
-              logout();
-              router.replace("/login");
+              void logout().finally(() => router.replace("/login"));
             }}
             className="flex w-full items-center justify-between rounded-xl border border-slate-800 bg-surface-900 px-4 py-3 text-left text-sm text-slate-300 transition hover:border-slate-700 hover:text-white"
             title={t("nav.logout")}

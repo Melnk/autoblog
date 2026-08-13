@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -15,7 +15,9 @@ import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName, textareaClassName } from "@/components/ui/form";
 import { ApiError, readableApiError } from "@/lib/api/client";
 import { createEvent, type CreateEventPayload } from "@/lib/api/events";
+import { getVehicle } from "@/lib/api/vehicles";
 import { VEHICLE_EVENT_TYPE_OPTIONS, getVehicleEventTypeOptions, useLanguage } from "@/lib/i18n";
+import { canEditVehicle } from "@/lib/permissions";
 
 const optionalPositiveInteger = z.preprocess(
   (value) => value === "" || value === null || value === undefined ? undefined : Number(value),
@@ -67,6 +69,8 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
   const router = useRouter();
   const { language, t } = useLanguage();
   const [apiError, setApiError] = useState<unknown>(null);
+  const [permissionLoading, setPermissionLoading] = useState(true);
+  const [canEdit, setCanEdit] = useState(false);
   const eventTypeOptions = getVehicleEventTypeOptions(language);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -80,6 +84,24 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
       payload: ""
     }
   });
+
+  useEffect(() => {
+    async function loadPermission() {
+      try {
+        const vehicle = await getVehicle(vehicleId);
+        const allowed = canEditVehicle(vehicle.role);
+        setCanEdit(allowed);
+        if (!allowed) {
+          router.replace(`/vehicles/${vehicleId}`);
+        }
+      } catch (error) {
+        setApiError(error);
+      } finally {
+        setPermissionLoading(false);
+      }
+    }
+    void loadPermission();
+  }, [router, vehicleId]);
 
   async function onSubmit(values: FormValues) {
     setApiError(null);
@@ -98,6 +120,14 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
         {t("events.backToVehicle")}
       </Link>
       <SectionHeader title={t("events.newTitle")} description={t("events.newDescription")} />
+      {apiError && !canEdit ? (
+        <ErrorMessage
+          message={readableApiError(apiError, language)}
+          details={apiError instanceof ApiError ? apiError.details : []}
+        />
+      ) : permissionLoading || !canEdit ? (
+        <Card className="text-slate-400">{t("common.loading")}</Card>
+      ) : (
       <Card className="max-w-5xl">
         <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
@@ -150,6 +180,7 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
           </div>
         </form>
       </Card>
+      )}
     </div>
   );
 }

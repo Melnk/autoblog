@@ -10,7 +10,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -53,5 +56,26 @@ public class VehiclePublicReportController {
     )
     public PublicReportMetadataResponse createOrGetActivePublicReport(@PathVariable UUID vehicleId) {
         return PublicReportMetadataResponse.from(publicReports.createOrGetActiveReport(vehicleId));
+    }
+
+    @DeleteMapping
+    @Operation(
+            summary = "Disable the active public report",
+            description = "Disables the current public link. Repeating the request is safe."
+    )
+    public ResponseEntity<Void> disablePublicReport(@PathVariable UUID vehicleId) {
+        publicReports.disableActiveReport(vehicleId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/rotations")
+    @Operation(
+            summary = "Rotate the active public report",
+            description = "Disables the current public link and returns a new active link."
+    )
+    public ResponseEntity<PublicReportMetadataResponse> rotatePublicReport(@PathVariable UUID vehicleId) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(PublicReportMetadataResponse.from(publicReports.rotateActiveReport(vehicleId)));
     }
 }

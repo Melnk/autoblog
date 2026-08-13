@@ -1,8 +1,7 @@
 import { apiRequest } from "@/lib/api/client";
 import type {
   MaintenanceReminder,
-  ReminderDueState,
-  ReminderStatus,
+  PagedResponse,
   ReminderType
 } from "@/lib/api/types";
 
@@ -16,17 +15,12 @@ export type CreateMaintenanceReminderRequest = {
 
 export function listVehicleReminders(
   vehicleId: string,
-  filters: { status?: ReminderStatus; dueState?: ReminderDueState } = {}
+  page = 0,
+  size = 20
 ) {
-  const params = new URLSearchParams();
-  if (filters.status) {
-    params.set("status", filters.status);
-  }
-  if (filters.dueState) {
-    params.set("dueState", filters.dueState);
-  }
-  const query = params.toString();
-  return apiRequest<MaintenanceReminder[]>(`/api/v1/vehicles/${vehicleId}/reminders${query ? `?${query}` : ""}`);
+  return apiRequest<PagedResponse<MaintenanceReminder>>(
+    `/api/v2/vehicles/${vehicleId}/reminders?page=${page}&size=${size}`
+  );
 }
 
 export function createVehicleReminder(vehicleId: string, request: CreateMaintenanceReminderRequest) {

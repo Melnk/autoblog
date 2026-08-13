@@ -3,10 +3,11 @@
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useAuth } from "@/components/auth/auth-provider";
 import { ProtectedRoute } from "@/components/auth/protected-route";
 import { AppShell } from "@/components/layout/app-shell";
 import { TrustScoreCard } from "@/components/trust/trust-score-card";
+import { PaginationControls } from "@/components/ui/pagination-controls";
+import { AccessManagementPanel } from "@/components/vehicles/access-management-panel";
 import { EventTimeline } from "@/components/vehicles/event-timeline";
 import { PublicReportActions } from "@/components/vehicles/public-report-actions";
 import { ReminderPanel } from "@/components/vehicles/reminder-panel";
@@ -14,12 +15,12 @@ import { RoleBadge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, SectionHeader } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { listAttachments } from "@/lib/api/attachments";
 import { readableApiError } from "@/lib/api/client";
 import { listEvents } from "@/lib/api/events";
-import type { EventAttachmentDto, TrustScoreResponse, VehicleAccessRole, VehicleDto, VehicleEventDto } from "@/lib/api/types";
-import { getVehicle, getVehicleTrustScore, listVehicleAccess } from "@/lib/api/vehicles";
+import type { TrustScoreResponse, VehicleDto, VehicleEventDto } from "@/lib/api/types";
+import { getVehicle, getVehicleTrustScore } from "@/lib/api/vehicles";
 import { useLanguage } from "@/lib/i18n";
+import { canEditVehicle, canManageVehicleAccess } from "@/lib/permissions";
 
 export default function VehicleDetailPage({
   params,
@@ -38,15 +39,14 @@ export default function VehicleDetailPage({
 }
 
 function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; eventCreated: boolean }) {
-  const { user } = useAuth();
   const { language, t } = useLanguage();
   const [vehicle, setVehicle] = useState<VehicleDto | null>(null);
   const [events, setEvents] = useState<VehicleEventDto[]>([]);
-  const [attachmentsByEvent, setAttachmentsByEvent] = useState<Record<string, EventAttachmentDto[]>>({});
   const [trustScore, setTrustScore] = useState<TrustScoreResponse | null>(null);
   const [trustScoreError, setTrustScoreError] = useState<string | null>(null);
   const [trustScoreLoading, setTrustScoreLoading] = useState(true);
-  const [role, setRole] = useState<VehicleAccessRole | null>(null);
+  const [eventsPage, setEventsPage] = useState(0);
+  const [eventsTotalPages, setEventsTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -58,14 +58,16 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
         const trustScoreRequest = getVehicleTrustScore(vehicleId)
           .then((response) => ({ response }))
           .catch((requestError) => ({ requestError }));
-        const [vehicleResponse, eventResponse, trustScoreResult] = await Promise.all([
+        const [vehicleResponse, eventPageResponse, trustScoreResult] = await Promise.all([
           getVehicle(vehicleId),
-          listEvents(vehicleId),
+          listEvents(vehicleId, eventsPage),
           trustScoreRequest
         ]);
-        const sortedEvents = [...eventResponse].sort((left, right) => left.sequenceNumber - right.sequenceNumber);
+        const sortedEvents = [...eventPageResponse.items]
+          .sort((left, right) => left.sequenceNumber - right.sequenceNumber);
         setVehicle(vehicleResponse);
         setEvents(sortedEvents);
+        setEventsTotalPages(eventPageResponse.totalPages);
         if ("response" in trustScoreResult) {
           setTrustScore(trustScoreResult.response);
         } else {
@@ -73,17 +75,6 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
           setTrustScoreError(readableApiError(trustScoreResult.requestError, language));
         }
         setTrustScoreLoading(false);
-        const attachmentEntries = await Promise.all(
-          sortedEvents.map(async (event) => [event.id, await listAttachments(vehicleId, event.id)] as const)
-        );
-        setAttachmentsByEvent(Object.fromEntries(attachmentEntries));
-
-        try {
-          const access = await listVehicleAccess(vehicleId);
-          setRole(access.find((item) => item.userId === user?.id)?.role ?? null);
-        } catch {
-          setRole(null);
-        }
       } catch (requestError) {
         setError(readableApiError(requestError, language));
         setTrustScoreLoading(false);
@@ -93,9 +84,11 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
     }
 
     void load();
-  }, [language, user?.id, vehicleId]);
+  }, [eventsPage, language, vehicleId]);
 
   const title = vehicle ? [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Автомобиль" : "Автомобиль";
+  const canEdit = vehicle ? canEditVehicle(vehicle.role) : false;
+  const canManageAccess = vehicle ? canManageVehicleAccess(vehicle.role) : false;
 
   return (
     <div>
@@ -117,7 +110,11 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
             <SectionHeader
               title={vehicle.year ? `${vehicle.year} ${title}` : title}
               description={`VIN ${vehicle.vin}`}
-              action={<ButtonLink href={`/vehicles/${vehicleId}/events/new`}><Plus className="h-4 w-4" />{t("events.add")}</ButtonLink>}
+              action={canEdit ? (
+                <ButtonLink href={`/vehicles/${vehicleId}/events/new`}>
+                  <Plus className="h-4 w-4" />{t("events.add")}
+                </ButtonLink>
+              ) : undefined}
             />
             <Card className="mb-6">
               <div className="grid gap-4 md:grid-cols-5">
@@ -127,16 +124,26 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
                 <Spec label={t("label.trim")} value={vehicle.trim} />
                 <Spec label={t("label.market")} value={vehicle.market} />
               </div>
-              {role ? <div className="mt-4"><RoleBadge role={role} /></div> : null}
+              <div className="mt-4"><RoleBadge role={vehicle.role} /></div>
             </Card>
             <div className="mb-6">
               <TrustScoreCard trustScore={trustScore} loading={trustScoreLoading} error={trustScoreError} />
             </div>
-            <EventTimeline vehicleId={vehicleId} events={events} attachmentsByEvent={attachmentsByEvent} />
+            <EventTimeline
+              vehicleId={vehicleId}
+              events={events}
+              canEdit={canEdit}
+            />
+            <PaginationControls
+              page={eventsPage}
+              totalPages={eventsTotalPages}
+              onPageChange={setEventsPage}
+            />
           </div>
           <div className="space-y-6">
-            <ReminderPanel vehicleId={vehicleId} />
-            <PublicReportActions vehicleId={vehicleId} />
+            <ReminderPanel vehicleId={vehicleId} canEdit={canEdit} />
+            {canEdit ? <PublicReportActions vehicleId={vehicleId} /> : null}
+            {canManageAccess ? <AccessManagementPanel vehicleId={vehicleId} /> : null}
             <Card>
               <h3 className="text-lg font-bold text-white">Hash-chain</h3>
               <p className="mt-2 text-sm leading-6 text-slate-400">

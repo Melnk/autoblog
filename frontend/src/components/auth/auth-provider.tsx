@@ -1,8 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/auth-token";
-import { login as loginRequest, me, register as registerRequest, type LoginPayload, type RegisterPayload } from "@/lib/api/auth";
+import {
+  login as loginRequest,
+  logout as logoutRequest,
+  me,
+  register as registerRequest,
+  type LoginPayload,
+  type RegisterPayload
+} from "@/lib/api/auth";
 import type { UserDto } from "@/lib/api/types";
 
 type AuthContextValue = {
@@ -11,7 +17,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 };
 
@@ -22,16 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
-    const token = getAccessToken();
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
     try {
       setUser(await me());
     } catch {
-      clearAccessToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -44,19 +43,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(async (payload: LoginPayload) => {
     const response = await loginRequest(payload);
-    setAccessToken(response.accessToken);
     setUser(response.user);
   }, []);
 
   const register = useCallback(async (payload: RegisterPayload) => {
     const response = await registerRequest(payload);
-    setAccessToken(response.accessToken);
     setUser(response.user);
   }, []);
 
-  const logout = useCallback(() => {
-    clearAccessToken();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo<AuthContextValue>(() => ({

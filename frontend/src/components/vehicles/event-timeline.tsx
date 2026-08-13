@@ -3,18 +3,18 @@ import type { ReactNode } from "react";
 import { AttachmentPanel } from "@/components/vehicles/attachment-panel";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import type { EventAttachmentDto, VehicleEventDto } from "@/lib/api/types";
+import type { VehicleEventDto } from "@/lib/api/types";
 import { formatDate, formatKm, formatMoney, shortHash } from "@/lib/format";
 import { getEnumLabel, useLanguage } from "@/lib/i18n";
 
 export function EventTimeline({
   vehicleId,
   events,
-  attachmentsByEvent
+  canEdit
 }: {
   vehicleId: string;
   events: VehicleEventDto[];
-  attachmentsByEvent: Record<string, EventAttachmentDto[]>;
+  canEdit: boolean;
 }) {
   const { language, t } = useLanguage();
 
@@ -66,7 +66,7 @@ export function EventTimeline({
             <AttachmentPanel
               vehicleId={vehicleId}
               eventId={event.id}
-              initialAttachments={attachmentsByEvent[event.id] ?? []}
+              canUpload={canEdit}
             />
           </Card>
         </div>

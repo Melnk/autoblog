@@ -1,5 +1,6 @@
 package com.autoblog.api.dto;
 
+import com.autoblog.access.domain.VehicleAccessRole;
 import com.autoblog.application.VehicleView;
 import java.time.Instant;
 import java.util.UUID;
@@ -15,6 +16,7 @@ public record VehicleResponse(
         String transmission,
         String trim,
         String market,
+        VehicleAccessRole role,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -30,6 +32,7 @@ public record VehicleResponse(
                 vehicle.transmission(),
                 vehicle.trim(),
                 vehicle.market(),
+                vehicle.role(),
                 vehicle.createdAt(),
                 vehicle.updatedAt()
         );

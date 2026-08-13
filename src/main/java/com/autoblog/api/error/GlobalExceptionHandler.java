@@ -7,6 +7,7 @@ import com.autoblog.application.DuplicateVinException;
 import com.autoblog.application.InvalidVinException;
 import com.autoblog.application.VehicleEventNotFoundException;
 import com.autoblog.application.VehicleNotFoundException;
+import com.autoblog.api.pagination.InvalidPaginationException;
 import com.autoblog.attachment.domain.AttachmentNotFoundException;
 import com.autoblog.attachment.domain.InvalidAttachmentException;
 import com.autoblog.identity.application.DuplicateEmailException;
@@ -43,6 +44,16 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(InvalidPaginationException.class)
+    public ResponseEntity<ApiErrorResponse> handleInvalidPagination(
+            InvalidPaginationException exception,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, "Validation failed", request, List.of(
+                new FieldErrorDetail(exception.getField(), exception.getMessage())
+        ));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleValidation(

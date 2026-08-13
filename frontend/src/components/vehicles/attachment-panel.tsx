@@ -1,11 +1,12 @@
 "use client";
 
 import { Download, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName } from "@/components/ui/form";
+import { PaginationControls } from "@/components/ui/pagination-controls";
 import { downloadAttachment, listAttachments, uploadAttachment } from "@/lib/api/attachments";
 import { readableApiError } from "@/lib/api/client";
 import type { AttachmentType, AttachmentVisibility, EventAttachmentDto } from "@/lib/api/types";
@@ -20,13 +21,15 @@ import {
 export function AttachmentPanel({
   vehicleId,
   eventId,
-  initialAttachments = []
+  canUpload
 }: {
   vehicleId: string;
   eventId: string;
-  initialAttachments?: EventAttachmentDto[];
+  canUpload: boolean;
 }) {
-  const [attachments, setAttachments] = useState<EventAttachmentDto[]>(initialAttachments);
+  const [attachments, setAttachments] = useState<EventAttachmentDto[]>([]);
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [type, setType] = useState<AttachmentType>("RECEIPT");
   const [visibility, setVisibility] = useState<AttachmentVisibility>("PRIVATE");
@@ -38,13 +41,19 @@ export function AttachmentPanel({
   const visibilityOptions = getAttachmentVisibilityOptions(language);
   const selectedVisibility = visibilityOptions.find((option) => option.value === visibility);
 
-  useEffect(() => {
-    setAttachments(initialAttachments);
-  }, [initialAttachments]);
+  const refresh = useCallback(async () => {
+    try {
+      const response = await listAttachments(vehicleId, eventId, page, 20);
+      setAttachments(response.items);
+      setTotalPages(response.totalPages);
+    } catch (requestError) {
+      setError(readableApiError(requestError, language));
+    }
+  }, [eventId, language, page, vehicleId]);
 
-  async function refresh() {
-    setAttachments(await listAttachments(vehicleId, eventId));
-  }
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   async function onUpload() {
     if (!file) {
@@ -57,7 +66,11 @@ export function AttachmentPanel({
       await uploadAttachment(vehicleId, eventId, { file, type, visibility, description });
       setFile(null);
       setDescription("");
-      await refresh();
+      if (page === 0) {
+        await refresh();
+      } else {
+        setPage(0);
+      }
     } catch (requestError) {
       setError(readableApiError(requestError, language));
     } finally {
@@ -110,32 +123,37 @@ export function AttachmentPanel({
       ) : (
         <p className="mt-3 text-sm text-slate-500">{t("attachments.empty")}</p>
       )}
+      <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <Field label={t("label.file")}>
-          <input className={inputClassName("pt-2")} type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
-        </Field>
-        <Field label={t("label.type")}>
-          <select className={inputClassName()} value={type} onChange={(event) => setType(event.target.value as AttachmentType)}>
-            {attachmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-        </Field>
-        <Field label={t("label.visibility")}>
-          <select className={inputClassName()} value={visibility} onChange={(event) => setVisibility(event.target.value as AttachmentVisibility)}>
-            {visibilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </select>
-          <span className="mt-1 block text-xs text-slate-500">
-            {selectedVisibility?.description}
-          </span>
-        </Field>
-        <Field label={t("label.description")}>
-          <input className={inputClassName()} value={description} onChange={(event) => setDescription(event.target.value)} />
-        </Field>
-      </div>
-      <Button type="button" variant="secondary" className="mt-3" onClick={() => void onUpload()} disabled={uploading}>
-        <Upload className="h-4 w-4" />
-        {uploading ? t("attachments.uploading") : t("attachments.upload")}
-      </Button>
+      {canUpload ? (
+        <>
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            <Field label={t("label.file")}>
+              <input className={inputClassName("pt-2")} type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
+            </Field>
+            <Field label={t("label.type")}>
+              <select className={inputClassName()} value={type} onChange={(event) => setType(event.target.value as AttachmentType)}>
+                {attachmentTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </Field>
+            <Field label={t("label.visibility")}>
+              <select className={inputClassName()} value={visibility} onChange={(event) => setVisibility(event.target.value as AttachmentVisibility)}>
+                {visibilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+              <span className="mt-1 block text-xs text-slate-500">
+                {selectedVisibility?.description}
+              </span>
+            </Field>
+            <Field label={t("label.description")}>
+              <input className={inputClassName()} value={description} onChange={(event) => setDescription(event.target.value)} />
+            </Field>
+          </div>
+          <Button type="button" variant="secondary" className="mt-3" onClick={() => void onUpload()} disabled={uploading}>
+            <Upload className="h-4 w-4" />
+            {uploading ? t("attachments.uploading") : t("attachments.upload")}
+          </Button>
+        </>
+      ) : null}
     </div>
   );
 }

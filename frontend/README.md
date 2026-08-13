@@ -16,8 +16,11 @@ Next.js Web MVP for AutoBlog.
 Create `.env.local`:
 
 ```bash
-NEXT_PUBLIC_API_BASE_URL=http://localhost:8080
+AUTOBLOG_BACKEND_URL=http://localhost:8080
+AUTOBLOG_PUBLIC_ORIGIN=http://localhost:3000
 ```
+
+These variables are read only by the Next.js server. Browser requests use the same-origin `/api/bff` route. Set the public origin explicitly when TLS is terminated by a reverse proxy so BFF origin validation uses the external URL.
 
 ## Run Backend
 
@@ -49,6 +52,7 @@ http://localhost:3000
 pnpm dev
 pnpm build
 pnpm lint
+pnpm test
 ```
 
 ## Test User Flow
@@ -68,6 +72,10 @@ pnpm lint
 13. Open `/reports/{publicToken}` without logging in.
 14. Verify Trust Score appears in the public report.
 15. Verify only the PUBLIC attachment appears in the public report.
+16. As OWNER, grant EDITOR/VIEWER access by email and revoke it again.
+17. Verify VIEWER sees no event, upload, reminder, report, or access-management actions.
+18. Rotate the public report and verify the old link no longer opens.
+19. Disable the public report and verify the active link no longer opens.
 
 ## Trust Score
 
@@ -101,6 +109,7 @@ Open `/settings` to switch the interface language between Russian and English.
 - Events appear in the timeline.
 - Event `title` is required.
 - Attachment upload works.
+- Attachment and timeline pagination works.
 - Reminder creation works with date, odometer, or both.
 - Reminder type and due-state labels are localized.
 - Reminder complete/cancel works for OWNER or EDITOR.
@@ -111,6 +120,10 @@ Open `/settings` to switch the interface language between Russian and English.
 - PUBLIC attachment appears in public report.
 - PRIVATE attachment does not appear in public report.
 - Public report opens without token.
+- OWNER can grant and revoke vehicle access by email.
+- VIEWER cannot see mutating actions or the access list.
+- Public report rotation invalidates the previous token.
+- Public report disable invalidates the active token.
 - Open `/settings`.
 - Switch to English.
 - Vehicle event type select displays English labels.
@@ -126,6 +139,4 @@ Open `/settings` to switch the interface language between Russian and English.
 
 ## Auth Note
 
-The MVP stores the access token in memory and `localStorage`.
-
-TODO: Move production token storage to HttpOnly cookies through a BFF/API gateway.
+The browser never receives the backend JWT. Login and registration go through the same-origin Next.js BFF, which stores the token in an `HttpOnly`, `SameSite=Strict`, `Secure` production cookie. Unsafe BFF requests also require a matching `Origin` header.

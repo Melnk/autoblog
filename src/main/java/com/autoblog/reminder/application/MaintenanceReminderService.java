@@ -17,6 +17,8 @@ import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -75,6 +77,15 @@ public class MaintenanceReminderService {
                 .filter(reminder -> dueState == null || reminder.dueState() == dueState)
                 .sorted(reminderComparator())
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MaintenanceReminderView> list(UUID vehicleId, Pageable pageable) {
+        vehicleAccess.requireViewAccess(vehicleId);
+        findVehicle(vehicleId);
+        Integer latestOdometerKm = latestOdometerKm(vehicleId);
+        return reminders.findByVehicle_Id(vehicleId, pageable)
+                .map(reminder -> toView(reminder, latestOdometerKm));
     }
 
     @Transactional

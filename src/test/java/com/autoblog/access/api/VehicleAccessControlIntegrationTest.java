@@ -126,7 +126,8 @@ class VehicleAccessControlIntegrationTest {
         mockMvc.perform(get("/api/v1/vehicles/{vehicleId}", vehicleId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(owner.token())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(vehicleId));
+                .andExpect(jsonPath("$.id").value(vehicleId))
+                .andExpect(jsonPath("$.role").value("OWNER"));
 
         mockMvc.perform(get("/api/v1/vehicles/{vehicleId}/access", vehicleId)
                         .header(HttpHeaders.AUTHORIZATION, bearer(owner.token())))
@@ -134,6 +135,27 @@ class VehicleAccessControlIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].userId").value(owner.userId()))
                 .andExpect(jsonPath("$[0].role").value("OWNER"));
+    }
+
+    @Test
+    void vehicleResponsesContainCurrentUsersRoleWithoutAccessListLookup() throws Exception {
+        String vehicleId = createVehicle(owner);
+        grantAccess(owner, vehicleId, "viewer@example.com", "VIEWER");
+
+        mockMvc.perform(get("/api/v1/vehicles/{vehicleId}", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(viewer.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("VIEWER"));
+
+        mockMvc.perform(get("/api/v2/vehicles")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(viewer.token())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].id").value(vehicleId))
+                .andExpect(jsonPath("$.items[0].role").value("VIEWER"));
+
+        mockMvc.perform(get("/api/v2/vehicles/{vehicleId}/access", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(viewer.token())))
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -1,5 +1,5 @@
 import { API_BASE_URL, apiRequest } from "@/lib/api/client";
-import type { AttachmentType, AttachmentVisibility, EventAttachmentDto } from "@/lib/api/types";
+import type { AttachmentType, AttachmentVisibility, EventAttachmentDto, PagedResponse } from "@/lib/api/types";
 
 export type UploadAttachmentPayload = {
   file: File;
@@ -8,8 +8,10 @@ export type UploadAttachmentPayload = {
   description?: string;
 };
 
-export function listAttachments(vehicleId: string, eventId: string) {
-  return apiRequest<EventAttachmentDto[]>(`/api/v1/vehicles/${vehicleId}/events/${eventId}/attachments`);
+export function listAttachments(vehicleId: string, eventId: string, page = 0, size = 100) {
+  return apiRequest<PagedResponse<EventAttachmentDto>>(
+    `/api/v2/vehicles/${vehicleId}/events/${eventId}/attachments?page=${page}&size=${size}`
+  );
 }
 
 export function uploadAttachment(vehicleId: string, eventId: string, payload: UploadAttachmentPayload) {

@@ -101,6 +101,10 @@ public class PublicVehicleReportEntity {
         return status;
     }
 
+    public void disable() {
+        status = PublicReportStatus.DISABLED;
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }

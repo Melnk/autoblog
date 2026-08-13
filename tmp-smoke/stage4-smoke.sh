@@ -21,12 +21,6 @@ d=json.load(sys.stdin)
 print(d.get("accessToken") or d.get("access_token") or d.get("token") or d.get("jwt") or "")'
 }
 
-extract_user_id() {
-  python3 -c 'import sys,json
-d=json.load(sys.stdin)
-print(d.get("id") or d.get("userId") or d.get("user_id") or "")'
-}
-
 register_user() {
   local email="$1"
   local name="$2"
@@ -62,10 +56,7 @@ EDITOR_REGISTER=$(register_user "$EDITOR_EMAIL" "Editor User")
 VIEWER_REGISTER=$(register_user "$VIEWER_EMAIL" "Viewer User")
 RANDOM_REGISTER=$(register_user "$RANDOM_EMAIL" "Random User")
 
-echo "$OWNER_REGISTER"
-echo "$EDITOR_REGISTER"
-echo "$VIEWER_REGISTER"
-echo "$RANDOM_REGISTER"
+echo "Users registered successfully"
 
 echo
 echo "2. Login users"
@@ -87,7 +78,6 @@ echo "RANDOM_TOKEN length: ${#RANDOM_TOKEN}"
 
 if [ -z "$OWNER_TOKEN" ] || [ -z "$EDITOR_TOKEN" ] || [ -z "$VIEWER_TOKEN" ] || [ -z "$RANDOM_TOKEN" ]; then
   echo "ERROR: one of tokens is empty. Check login response DTO field names."
-  echo "OWNER_LOGIN=$OWNER_LOGIN"
   exit 1
 fi
 
@@ -101,17 +91,6 @@ VIEWER_ME=$(curl -s "$BASE/api/v1/auth/me" -H "Authorization: Bearer $VIEWER_TOK
 echo "OWNER_ME=$OWNER_ME"
 echo "EDITOR_ME=$EDITOR_ME"
 echo "VIEWER_ME=$VIEWER_ME"
-
-EDITOR_USER_ID=$(echo "$EDITOR_ME" | extract_user_id)
-VIEWER_USER_ID=$(echo "$VIEWER_ME" | extract_user_id)
-
-echo "EDITOR_USER_ID=$EDITOR_USER_ID"
-echo "VIEWER_USER_ID=$VIEWER_USER_ID"
-
-if [ -z "$EDITOR_USER_ID" ] || [ -z "$VIEWER_USER_ID" ]; then
-  echo "ERROR: could not extract user id from /auth/me."
-  exit 1
-fi
 
 echo
 echo "4. Owner creates vehicle"
@@ -219,7 +198,7 @@ GRANT_EDITOR_RESPONSE=$(curl -s -X POST "$BASE/api/v1/vehicles/$VEHICLE_ID/acces
   -H "Authorization: Bearer $OWNER_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
-    \"userId\": \"$EDITOR_USER_ID\",
+    \"email\": \"$EDITOR_EMAIL\",
     \"role\": \"EDITOR\"
   }")
 
@@ -255,7 +234,7 @@ GRANT_VIEWER_RESPONSE=$(curl -s -X POST "$BASE/api/v1/vehicles/$VEHICLE_ID/acces
   -H "Authorization: Bearer $OWNER_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
-    \"userId\": \"$VIEWER_USER_ID\",
+    \"email\": \"$VIEWER_EMAIL\",
     \"role\": \"VIEWER\"
   }")
 

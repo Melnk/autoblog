@@ -1,18 +1,16 @@
 package com.autoblog.attachment.infrastructure;
 
 import com.autoblog.attachment.application.AttachmentStorage;
-import com.autoblog.attachment.application.LocalStorageProperties;
+import com.autoblog.attachment.application.StorageProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.springframework.stereotype.Component;
 
-@Component
 public class FileSystemAttachmentStorage implements AttachmentStorage {
 
     private final Path root;
 
-    public FileSystemAttachmentStorage(LocalStorageProperties properties) {
+    public FileSystemAttachmentStorage(StorageProperties properties) {
         this.root = Path.of(properties.getLocalRoot()).toAbsolutePath().normalize();
     }
 
@@ -34,6 +32,15 @@ public class FileSystemAttachmentStorage implements AttachmentStorage {
             return Files.readAllBytes(source);
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to load attachment", exception);
+        }
+    }
+
+    @Override
+    public void delete(String storageKey) {
+        try {
+            Files.deleteIfExists(resolve(storageKey));
+        } catch (IOException exception) {
+            throw new IllegalStateException("Unable to delete attachment", exception);
         }
     }
 

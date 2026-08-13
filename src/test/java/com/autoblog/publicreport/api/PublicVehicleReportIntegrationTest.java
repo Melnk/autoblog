@@ -2,6 +2,7 @@ package com.autoblog.publicreport.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -142,6 +143,43 @@ class PublicVehicleReportIntegrationTest {
 
         assertThat(secondReport.get("id").asText()).isEqualTo(firstReport.get("id").asText());
         assertThat(secondReport.get("publicToken").asText()).isEqualTo(firstReport.get("publicToken").asText());
+    }
+
+    @Test
+    void disablesPublicReportIdempotentlyAndRejectsOldToken() throws Exception {
+        String vehicleId = createVehicle();
+        JsonNode report = createPublicReport(vehicleId);
+
+        mockMvc.perform(delete("/api/v1/vehicles/{vehicleId}/public-report", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/v1/vehicles/{vehicleId}/public-report", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/public/reports/{publicToken}", report.get("publicToken").asText()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rotatesPublicReportAndInvalidatesPreviousToken() throws Exception {
+        String vehicleId = createVehicle();
+        JsonNode first = createPublicReport(vehicleId);
+
+        String response = mockMvc.perform(post("/api/v1/vehicles/{vehicleId}/public-report/rotations", vehicleId)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(ownerToken)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+        JsonNode rotated = objectMapper.readTree(response);
+
+        assertThat(rotated.get("publicToken").asText()).isNotEqualTo(first.get("publicToken").asText());
+        mockMvc.perform(get("/api/v1/public/reports/{publicToken}", first.get("publicToken").asText()))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/public/reports/{publicToken}", rotated.get("publicToken").asText()))
+                .andExpect(status().isOk());
     }
 
     @Test

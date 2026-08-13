@@ -1,13 +1,17 @@
 package com.autoblog.application;
 
 import com.autoblog.access.application.VehicleAccessService;
+import com.autoblog.access.domain.VehicleAccessRole;
 import com.autoblog.infrastructure.persistence.VehicleEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
+import com.autoblog.observability.DomainMetrics;
 import com.autoblog.security.CurrentUser;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +28,7 @@ public class VehicleApplicationService {
     private final CanonicalJsonService canonicalJsonService;
     private final VehicleAccessService vehicleAccess;
     private final CurrentUser currentUser;
+    private final DomainMetrics metrics;
 
     public VehicleApplicationService(
             VehicleJpaRepository vehicles,
@@ -32,7 +37,8 @@ public class VehicleApplicationService {
             EventHashService eventHashService,
             CanonicalJsonService canonicalJsonService,
             VehicleAccessService vehicleAccess,
-            CurrentUser currentUser
+            CurrentUser currentUser,
+            DomainMetrics metrics
     ) {
         this.vehicles = vehicles;
         this.events = events;
@@ -41,6 +47,7 @@ public class VehicleApplicationService {
         this.canonicalJsonService = canonicalJsonService;
         this.vehicleAccess = vehicleAccess;
         this.currentUser = currentUser;
+        this.metrics = metrics;
     }
 
     @Transactional
@@ -65,13 +72,13 @@ public class VehicleApplicationService {
 
         VehicleEntity savedVehicle = vehicles.save(vehicle);
         vehicleAccess.createOwnerAccess(savedVehicle, currentUser.requireUserId());
-        return toView(savedVehicle);
+        return toView(savedVehicle, VehicleAccessRole.OWNER);
     }
 
     @Transactional(readOnly = true)
     public VehicleView getVehicle(UUID vehicleId) {
-        vehicleAccess.requireViewAccess(vehicleId);
-        return toView(findVehicle(vehicleId));
+        var role = vehicleAccess.requireViewAccess(vehicleId);
+        return toView(findVehicle(vehicleId), role);
     }
 
     @Transactional(readOnly = true)
@@ -79,21 +86,28 @@ public class VehicleApplicationService {
         String vin = vinNormalizer.normalizeAndValidate(rawVin);
         VehicleEntity vehicle = vehicles.findByVin(vin)
                 .orElseThrow(() -> new VehicleNotFoundException("Vehicle with VIN " + vin + " was not found"));
-        vehicleAccess.requireViewAccess(vehicle.getId());
-        return toView(vehicle);
+        var role = vehicleAccess.requireViewAccess(vehicle.getId());
+        return toView(vehicle, role);
     }
 
     @Transactional(readOnly = true)
     public List<VehicleView> getAccessibleVehicles() {
-        return vehicleAccess.accessibleVehicles().stream()
-                .map(this::toView)
+        return vehicleAccess.accessibleVehicleEntries().stream()
+                .map(entry -> toView(entry.getVehicle(), entry.getRole()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<VehicleView> getAccessibleVehicles(Pageable pageable) {
+        return vehicleAccess.accessibleVehicleEntries(pageable)
+                .map(entry -> toView(entry.getVehicle(), entry.getRole()));
     }
 
     @Transactional
     public VehicleEventView addEvent(AddVehicleEventCommand command) {
         vehicleAccess.requireEditAccess(command.vehicleId());
-        VehicleEntity vehicle = findVehicle(command.vehicleId());
+        VehicleEntity vehicle = vehicles.findByIdForUpdate(command.vehicleId())
+                .orElseThrow(() -> new VehicleNotFoundException(command.vehicleId()));
         VehicleEventEntity previous = events.findTopByVehicle_IdOrderBySequenceNumberDesc(vehicle.getId())
                 .orElse(null);
         long sequenceNumber = previous == null ? 1L : previous.getSequenceNumber() + 1L;
@@ -133,7 +147,9 @@ public class VehicleApplicationService {
                 eventHash
         );
 
-        return toView(events.save(event));
+        VehicleEventEntity savedEvent = events.save(event);
+        metrics.eventCreated();
+        return toView(savedEvent);
     }
 
     @Transactional(readOnly = true)
@@ -145,12 +161,22 @@ public class VehicleApplicationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public Page<VehicleEventView> getEvents(UUID vehicleId, Pageable pageable) {
+        vehicleAccess.requireViewAccess(vehicleId);
+        findVehicle(vehicleId);
+        return events.findByVehicle_Id(vehicleId, pageable).map(this::toView);
+    }
+
     private VehicleEntity findVehicle(UUID vehicleId) {
         return vehicles.findById(vehicleId)
                 .orElseThrow(() -> new VehicleNotFoundException(vehicleId));
     }
 
-    private VehicleView toView(VehicleEntity vehicle) {
+    private VehicleView toView(
+            VehicleEntity vehicle,
+            VehicleAccessRole role
+    ) {
         return new VehicleView(
                 vehicle.getId(),
                 vehicle.getVin(),
@@ -162,6 +188,7 @@ public class VehicleApplicationService {
                 vehicle.getTransmission(),
                 vehicle.getTrim(),
                 vehicle.getMarket(),
+                role,
                 vehicle.getCreatedAt(),
                 vehicle.getUpdatedAt()
         );

@@ -1,11 +1,11 @@
 "use client";
 
-import { Copy, ExternalLink, FileText } from "lucide-react";
+import { Copy, ExternalLink, FileText, RefreshCw, Unlink } from "lucide-react";
 import { useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { createPublicReport } from "@/lib/api/vehicles";
+import { createPublicReport, disablePublicReport, rotatePublicReport } from "@/lib/api/vehicles";
 import type { PublicReportMetadataDto } from "@/lib/api/types";
 import { API_BASE_URL, readableApiError } from "@/lib/api/client";
 import { useLanguage } from "@/lib/i18n";
@@ -15,6 +15,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const { language, t } = useLanguage();
   const frontendUrl = report ? `/reports/${report.publicToken}` : null;
   const absoluteFrontendUrl = frontendUrl && typeof window !== "undefined" ? `${window.location.origin}${frontendUrl}` : frontendUrl;
@@ -23,8 +24,38 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
     setLoading(true);
     setCopied(false);
     setError(null);
+    setMessage(null);
     try {
       setReport(await createPublicReport(vehicleId));
+    } catch (requestError) {
+      setError(readableApiError(requestError, language));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function disable() {
+    await runMutation(async () => {
+      await disablePublicReport(vehicleId);
+      setReport(null);
+      setMessage(t("publicReport.disabled"));
+    });
+  }
+
+  async function rotate() {
+    await runMutation(async () => {
+      setReport(await rotatePublicReport(vehicleId));
+      setCopied(false);
+      setMessage(t("publicReport.rotated"));
+    });
+  }
+
+  async function runMutation(action: () => Promise<void>) {
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await action();
     } catch (requestError) {
       setError(readableApiError(requestError, language));
     } finally {
@@ -49,6 +80,7 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
           <h3 className="text-lg font-bold text-white">{t("publicReport.title")}</h3>
           <p className="mt-1 text-sm text-slate-400">{t("publicReport.description")}</p>
           <ErrorMessage message={error} />
+          {message ? <p className="mt-3 text-sm text-emerald-200">{message}</p> : null}
           {report ? (
             <div className="mt-4 space-y-3">
               <div className="rounded-lg border border-slate-800 bg-black/20 p-3 text-sm text-slate-300">
@@ -64,6 +96,14 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
                 <Button type="button" variant="secondary" onClick={() => void copy()}>
                   <Copy className="h-4 w-4" />
                   {copied ? t("common.copied") : t("common.copy")}
+                </Button>
+                <Button type="button" variant="secondary" disabled={loading} onClick={() => void rotate()}>
+                  <RefreshCw className="h-4 w-4" />
+                  {t("publicReport.rotate")}
+                </Button>
+                <Button type="button" variant="ghost" disabled={loading} onClick={() => void disable()}>
+                  <Unlink className="h-4 w-4" />
+                  {t("publicReport.disable")}
                 </Button>
               </div>
             </div>

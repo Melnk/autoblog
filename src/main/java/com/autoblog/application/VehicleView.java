@@ -1,5 +1,6 @@
 package com.autoblog.application;
 
+import com.autoblog.access.domain.VehicleAccessRole;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -14,6 +15,7 @@ public record VehicleView(
         String transmission,
         String trim,
         String market,
+        VehicleAccessRole role,
         Instant createdAt,
         Instant updatedAt
 ) {

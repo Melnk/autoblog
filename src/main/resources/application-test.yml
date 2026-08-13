@@ -9,6 +9,7 @@ spring:
 
 autoblog:
   storage:
+    type: local
     local-root: ./target/test-uploads
   security:
     jwt-secret: test-development-secret-for-autoblog-integration-tests

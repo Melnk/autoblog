@@ -13,10 +13,13 @@ import com.autoblog.infrastructure.persistence.VehicleEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
+import com.autoblog.observability.DomainMetrics;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,6 +41,8 @@ public class EventAttachmentService {
     private final AttachmentChecksumService checksumService;
     private final AttachmentProperties properties;
     private final VehicleAccessService vehicleAccess;
+    private final DomainMetrics metrics;
+    private final AttachmentRollbackCleanup rollbackCleanup;
 
     public EventAttachmentService(
             EventAttachmentJpaRepository attachments,
@@ -46,7 +51,9 @@ public class EventAttachmentService {
             AttachmentStorage storage,
             AttachmentChecksumService checksumService,
             AttachmentProperties properties,
-            VehicleAccessService vehicleAccess
+            VehicleAccessService vehicleAccess,
+            DomainMetrics metrics,
+            AttachmentRollbackCleanup rollbackCleanup
     ) {
         this.attachments = attachments;
         this.vehicles = vehicles;
@@ -55,6 +62,8 @@ public class EventAttachmentService {
         this.checksumService = checksumService;
         this.properties = properties;
         this.vehicleAccess = vehicleAccess;
+        this.metrics = metrics;
+        this.rollbackCleanup = rollbackCleanup;
     }
 
     @Transactional
@@ -74,6 +83,7 @@ public class EventAttachmentService {
         String checksum = checksumService.sha256(content);
         String storageKey = storageKey(vehicleId, eventId, contentType);
 
+        rollbackCleanup.register(storageKey);
         storage.store(storageKey, content);
 
         EventAttachmentEntity attachment = new EventAttachmentEntity(
@@ -90,7 +100,9 @@ public class EventAttachmentService {
                 trimToNull(description)
         );
 
-        return toView(attachments.save(attachment));
+        EventAttachmentEntity savedAttachment = attachments.save(attachment);
+        metrics.attachmentUploaded();
+        return toView(savedAttachment);
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +113,14 @@ public class EventAttachmentService {
         return attachments.findByEvent_IdOrderByCreatedAtAsc(eventId).stream()
                 .map(this::toView)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<EventAttachmentView> list(UUID vehicleId, UUID eventId, Pageable pageable) {
+        vehicleAccess.requireViewAccess(vehicleId);
+        findVehicle(vehicleId);
+        findEvent(vehicleId, eventId);
+        return attachments.findByEvent_Id(eventId, pageable).map(this::toView);
     }
 
     @Transactional(readOnly = true)

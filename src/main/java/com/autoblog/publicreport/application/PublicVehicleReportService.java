@@ -10,6 +10,7 @@ import com.autoblog.infrastructure.persistence.VehicleEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventEntity;
 import com.autoblog.infrastructure.persistence.VehicleEventJpaRepository;
 import com.autoblog.infrastructure.persistence.VehicleJpaRepository;
+import com.autoblog.observability.DomainMetrics;
 import com.autoblog.publicreport.domain.PublicReportNotFoundException;
 import com.autoblog.publicreport.domain.PublicReportStatus;
 import com.autoblog.publicreport.infrastructure.PublicVehicleReportEntity;
@@ -41,6 +42,7 @@ public class PublicVehicleReportService {
     private final EventAttachmentService attachments;
     private final VehicleAccessService vehicleAccess;
     private final TrustScoreService trustScores;
+    private final DomainMetrics metrics;
 
     public PublicVehicleReportService(
             PublicVehicleReportJpaRepository reports,
@@ -53,7 +55,8 @@ public class PublicVehicleReportService {
             QrCodeSvgService qrCodeSvgService,
             EventAttachmentService attachments,
             VehicleAccessService vehicleAccess,
-            TrustScoreService trustScores
+            TrustScoreService trustScores,
+            DomainMetrics metrics
     ) {
         this.reports = reports;
         this.vehicles = vehicles;
@@ -66,12 +69,13 @@ public class PublicVehicleReportService {
         this.attachments = attachments;
         this.vehicleAccess = vehicleAccess;
         this.trustScores = trustScores;
+        this.metrics = metrics;
     }
 
     @Transactional
     public PublicReportMetadataView createOrGetActiveReport(UUID vehicleId) {
         vehicleAccess.requireEditAccess(vehicleId);
-        VehicleEntity vehicle = findVehicle(vehicleId);
+        VehicleEntity vehicle = findVehicleForUpdate(vehicleId);
         return reports.findByVehicle_IdAndStatus(vehicleId, PublicReportStatus.ACTIVE)
                 .map(this::toMetadataView)
                 .orElseGet(() -> toMetadataView(reports.save(new PublicVehicleReportEntity(
@@ -80,6 +84,35 @@ public class PublicVehicleReportService {
                         generateUniqueToken(),
                         PublicReportStatus.ACTIVE
                 ))));
+    }
+
+    @Transactional
+    public void disableActiveReport(UUID vehicleId) {
+        vehicleAccess.requireEditAccess(vehicleId);
+        findVehicleForUpdate(vehicleId);
+        reports.findByVehicle_IdAndStatus(vehicleId, PublicReportStatus.ACTIVE)
+                .ifPresent(report -> {
+                    report.disable();
+                    metrics.publicReportDisabled();
+                });
+    }
+
+    @Transactional
+    public PublicReportMetadataView rotateActiveReport(UUID vehicleId) {
+        vehicleAccess.requireEditAccess(vehicleId);
+        VehicleEntity vehicle = findVehicleForUpdate(vehicleId);
+        reports.findByVehicle_IdAndStatus(vehicleId, PublicReportStatus.ACTIVE)
+                .ifPresent(PublicVehicleReportEntity::disable);
+        reports.flush();
+
+        PublicVehicleReportEntity report = reports.save(new PublicVehicleReportEntity(
+                UUID.randomUUID(),
+                vehicle,
+                generateUniqueToken(),
+                PublicReportStatus.ACTIVE
+        ));
+        metrics.publicReportRotated();
+        return toMetadataView(report);
     }
 
     @Transactional(readOnly = true)
@@ -120,6 +153,11 @@ public class PublicVehicleReportService {
 
     private VehicleEntity findVehicle(UUID vehicleId) {
         return vehicles.findById(vehicleId)
+                .orElseThrow(() -> new VehicleNotFoundException(vehicleId));
+    }
+
+    private VehicleEntity findVehicleForUpdate(UUID vehicleId) {
+        return vehicles.findByIdForUpdate(vehicleId)
                 .orElseThrow(() -> new VehicleNotFoundException(vehicleId));
     }
 

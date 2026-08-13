@@ -1,0 +1,22 @@
+groups:
+  - name: autoblog
+    rules:
+      - alert: AutoblogBackendDown
+        expr: up{job="autoblog-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: AutoBlog backend is unavailable
+
+      - alert: AutoblogHighServerErrorRate
+        expr: >-
+          sum(rate(http_server_requests_seconds_count{application="autoblog",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_server_requests_seconds_count{application="autoblog"}[5m])), 1)
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: AutoBlog 5xx rate is above 5 percent

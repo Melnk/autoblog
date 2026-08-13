@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    password: ${AUTOBLOG_DB_PASSWORD}
+    url: ${AUTOBLOG_DB_URL}
+    username: ${AUTOBLOG_DB_USERNAME}
+  jpa:
+    show-sql: false
+
+server:
+  forward-headers-strategy: framework
+
+management:
+  server:
+    port: ${AUTOBLOG_MANAGEMENT_PORT:9091}
+
+springdoc:
+  api-docs:
+    enabled: ${AUTOBLOG_OPENAPI_ENABLED:false}
+  swagger-ui:
+    enabled: ${AUTOBLOG_OPENAPI_ENABLED:false}
+
+autoblog:
+  storage:
+    type: s3
+
+logging:
+  level:
+    root: INFO

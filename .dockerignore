@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.pnpm-store
+.env*
+data
+frontend
+target
+tmp-smoke
+*.iml
+*.log
