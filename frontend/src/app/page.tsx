@@ -15,7 +15,7 @@ export default function HomePage() {
   }, [isAuthenticated, loading, router]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-950 text-slate-300">
+    <div className="flex min-h-screen items-center justify-center bg-canvas text-muted" role="status">
       Открываем AutoBlog…
     </div>
   );

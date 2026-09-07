@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { createPublicReport, disablePublicReport, rotatePublicReport } from "@/lib/api/vehicles";
 import type { PublicReportMetadataDto } from "@/lib/api/types";
-import { API_BASE_URL, readableApiError } from "@/lib/api/client";
+import { readableApiError } from "@/lib/api/client";
 import { useLanguage } from "@/lib/i18n";
 
 export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
@@ -73,20 +73,19 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
   return (
     <Card>
       <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-400/10 text-emerald-200">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-ink">
           <FileText className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg font-bold text-white">{t("publicReport.title")}</h3>
-          <p className="mt-1 text-sm text-slate-400">{t("publicReport.description")}</p>
+          <h3 className="text-lg font-bold text-ink">{t("publicReport.title")}</h3>
+          <p className="mt-1 text-sm text-muted">{t("publicReport.description")}</p>
           <ErrorMessage message={error} />
-          {message ? <p className="mt-3 text-sm text-emerald-200">{message}</p> : null}
+          {message ? <p className="mt-3 text-sm text-emerald-700">{message}</p> : null}
           {report ? (
             <div className="mt-4 space-y-3">
-              <div className="rounded-lg border border-slate-800 bg-black/20 p-3 text-sm text-slate-300">
-                <div className="mb-2 text-xs uppercase tracking-wide text-slate-500">Token {shortToken(report.publicToken)}</div>
-                <div className="truncate">Frontend: {absoluteFrontendUrl}</div>
-                <div className="mt-1 truncate text-slate-500">Backend: {API_BASE_URL}{report.publicUrl}</div>
+              <div className="rounded-2xl border border-line bg-canvas p-3 text-sm text-ink">
+                <div className="mb-2 text-xs font-medium text-muted">{language === "ru" ? "Ссылка для покупателя" : "Link for a buyer"}</div>
+                <div className="break-all">{absoluteFrontendUrl}</div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <ButtonLink href={frontendUrl ?? "#"} target="_blank" variant="secondary">
@@ -116,8 +115,4 @@ export function PublicReportActions({ vehicleId }: { vehicleId: string }) {
       </div>
     </Card>
   );
-}
-
-function shortToken(token: string) {
-  return token.length > 16 ? `${token.slice(0, 8)}…${token.slice(-6)}` : token;
 }

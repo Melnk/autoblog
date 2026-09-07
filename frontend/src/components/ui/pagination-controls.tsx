@@ -18,26 +18,28 @@ export function PaginationControls({
   }
 
   return (
-    <div className="mt-5 flex items-center justify-between gap-3">
+    <nav aria-label={t("common.page")} className="mt-5 flex flex-wrap items-center justify-between gap-2">
       <Button
         type="button"
         variant="secondary"
+        className="px-3"
         disabled={page === 0}
         onClick={() => onPageChange(page - 1)}
       >
         {t("common.previous")}
       </Button>
-      <span className="text-sm text-slate-400">
+      <span aria-live="polite" className="order-first w-full text-center text-xs text-muted sm:order-none sm:w-auto">
         {t("common.page")} {page + 1} / {totalPages}
       </span>
       <Button
         type="button"
         variant="secondary"
+        className="px-3"
         disabled={page + 1 >= totalPages}
         onClick={() => onPageChange(page + 1)}
       >
         {t("common.next")}
       </Button>
-    </div>
+    </nav>
   );
 }

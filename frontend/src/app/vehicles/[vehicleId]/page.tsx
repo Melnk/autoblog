@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ProtectedRoute } from "@/components/auth/protected-route";
@@ -86,27 +86,28 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
     void load();
   }, [eventsPage, language, vehicleId]);
 
-  const title = vehicle ? [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Автомобиль" : "Автомобиль";
+  const fallbackTitle = language === "ru" ? "Автомобиль" : "Vehicle";
+  const title = vehicle ? [vehicle.make, vehicle.model].filter(Boolean).join(" ") || fallbackTitle : fallbackTitle;
   const canEdit = vehicle ? canEditVehicle(vehicle.role) : false;
   const canManageAccess = vehicle ? canManageVehicleAccess(vehicle.role) : false;
 
   return (
     <div>
-      <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+      <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
         {t("vehicle.backToVehicles")}
       </Link>
       <ErrorMessage message={error} />
       {eventCreated ? (
-        <div className="mb-6 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
+        <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
           {t("events.created")}
         </div>
       ) : null}
       {loading ? (
-        <Card className="text-slate-400">{t("common.loading")}</Card>
+        <Card className="text-muted">{t("common.loading")}</Card>
       ) : vehicle ? (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <div>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+          <div className="min-w-0">
             <SectionHeader
               title={vehicle.year ? `${vehicle.year} ${title}` : title}
               description={`VIN ${vehicle.vin}`}
@@ -117,7 +118,7 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
               ) : undefined}
             />
             <Card className="mb-6">
-              <div className="grid gap-4 md:grid-cols-5">
+              <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 2xl:grid-cols-5">
                 <Spec label={t("label.generation")} value={vehicle.generation} />
                 <Spec label={t("label.engine")} value={vehicle.engine} />
                 <Spec label={t("label.transmission")} value={vehicle.transmission} />
@@ -140,14 +141,17 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
               onPageChange={setEventsPage}
             />
           </div>
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <ReminderPanel vehicleId={vehicleId} canEdit={canEdit} />
             {canEdit ? <PublicReportActions vehicleId={vehicleId} /> : null}
             {canManageAccess ? <AccessManagementPanel vehicleId={vehicleId} /> : null}
-            <Card>
-              <h3 className="text-lg font-bold text-white">Hash-chain</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-400">
-                Каждое событие хранит ссылку на предыдущий hash. Технические поля доступны в карточках timeline.
+            <Card className="bg-brand-soft/60">
+              <ShieldCheck className="mb-3 h-6 w-6 text-ink" />
+              <h3 className="text-lg font-bold text-ink">{language === "ru" ? "История под защитой" : "A protected history"}</h3>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {language === "ru"
+                  ? "Записи связаны между собой: проверка помогает заметить изменения в сохранённой истории. Чеки и документы дополняют каждое событие."
+                  : "Records are linked together, making changes to the saved history detectable. Receipts and documents add context to each event."}
               </p>
             </Card>
           </div>
@@ -159,9 +163,9 @@ function VehicleDetailContent({ vehicleId, eventCreated }: { vehicleId: string; 
 
 function Spec({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-1 font-semibold text-slate-100">{value || "—"}</div>
+    <div className="min-w-0">
+      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-1 break-words font-semibold text-ink">{value || "—"}</div>
     </div>
   );
 }

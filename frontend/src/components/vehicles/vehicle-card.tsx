@@ -1,55 +1,41 @@
 "use client";
 
-import { ArrowRight, Calendar, Gauge, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarDays, CarFront } from "lucide-react";
 import Link from "next/link";
-import { Badge, RoleBadge } from "@/components/ui/badge";
+import { RoleBadge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { CarIllustration } from "@/components/vehicles/car-illustration";
 import type { VehicleDto } from "@/lib/api/types";
 import { useLanguage } from "@/lib/i18n";
 
 export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
-  const title = [vehicle.make, vehicle.model].filter(Boolean).join(" ") || "Автомобиль";
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
+  const title = [vehicle.make, vehicle.model].filter(Boolean).join(" ") || (language === "ru" ? "Автомобиль" : "Vehicle");
 
   return (
-    <Card className="group overflow-hidden p-0 transition hover:border-blue-400/50 hover:shadow-glow">
-      <div className="relative h-36 border-b border-slate-800 bg-gradient-to-br from-blue-500/20 via-surface-900 to-emerald-500/10">
-        <div className="absolute inset-x-6 bottom-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-bold text-white">{vehicle.year ? `${vehicle.year} ` : ""}{title}</h2>
-              <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">VIN {vehicle.vin}</p>
-            </div>
-            {vehicle.role ? <RoleBadge role={vehicle.role} /> : null}
-          </div>
+    <Card className="group overflow-hidden p-0 transition-shadow hover:shadow-lift sm:p-0">
+      <div className="relative bg-canvas px-5 pt-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-1.5 text-xs text-muted"><CarFront className="h-3.5 w-3.5" />
+            {language === "ru" ? "Мой автомобиль" : "My vehicle"}
+          </span>
+          <RoleBadge role={vehicle.role} />
         </div>
+        <CarIllustration className="mx-auto h-36 max-w-72" />
       </div>
-      <div className="space-y-5 p-5">
-        <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="min-w-0 break-words text-xl font-bold tracking-tight">{title}</h3>
+          {vehicle.year && <span className="inline-flex items-center gap-1.5 text-xs text-muted"><CalendarDays className="h-3.5 w-3.5" />{vehicle.year}</span>}
+        </div>
+        <p className="mt-2 break-all font-mono text-[11px] tracking-wide text-muted">VIN {vehicle.vin}</p>
+        <div className="my-5 grid grid-cols-2 gap-3 border-y border-line py-4">
           <Spec label={t("label.engine")} value={vehicle.engine} />
           <Spec label={t("label.transmission")} value={vehicle.transmission} />
-          <Spec label={t("label.trim")} value={vehicle.trim} />
-          <Spec label={t("label.market")} value={vehicle.market} />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {vehicle.generation ? <Badge>{vehicle.generation}</Badge> : null}
-          <Badge className="gap-1">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
-            История
-          </Badge>
-          {vehicle.year ? (
-            <Badge className="gap-1">
-              <Calendar className="h-3.5 w-3.5 text-blue-300" />
-              {vehicle.year}
-            </Badge>
-          ) : null}
-        </div>
-        <Link
-          href={`/vehicles/${vehicle.id}`}
-          className="flex items-center justify-between rounded-lg border border-slate-800 bg-surface-900 px-4 py-3 text-sm font-semibold text-slate-200 transition group-hover:border-blue-400/60 group-hover:text-white"
-        >
-          {t("vehicles.open")}
-          <ArrowRight className="h-4 w-4" />
+        <Link href={`/vehicles/${vehicle.id}`} aria-label={`${t("vehicles.open")}: ${title}`}
+          className="flex min-h-11 items-center justify-between gap-2 rounded-xl bg-canvas px-4 py-3 text-sm font-semibold transition-colors hover:bg-brand-yellow">
+          {t("vehicles.open")}<ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </Card>
@@ -57,13 +43,5 @@ export function VehicleCard({ vehicle }: { vehicle: VehicleDto }) {
 }
 
 function Spec({ label, value }: { label: string; value?: string | number | null }) {
-  return (
-    <div className="min-w-0 rounded-lg border border-slate-800 bg-black/20 p-3">
-      <div className="flex items-center gap-2 text-[11px] uppercase tracking-wide text-slate-500">
-        <Gauge className="h-3 w-3" />
-        {label}
-      </div>
-      <div className="mt-1 truncate text-slate-200">{value || "—"}</div>
-    </div>
-  );
+  return <div className="min-w-0"><p className="text-xs text-muted">{label}</p><p className="mt-1 truncate text-sm font-semibold">{value || "—"}</p></div>;
 }

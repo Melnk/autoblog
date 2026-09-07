@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckCircle2, Coins, Download, Gauge, MapPin, XCircle } from "lucide-react";
+import { CalendarDays, CarFront, CheckCircle2, Coins, Download, Gauge, MapPin, XCircle } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
@@ -35,35 +35,36 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
   }, [language, params.publicToken]);
 
   if (loading) {
-    return <PublicShell><Card className="text-slate-400">{t("common.loading")}</Card></PublicShell>;
+    return <PublicShell><Card className="text-muted">{t("common.loading")}</Card></PublicShell>;
   }
 
   if (error || !report) {
     return (
       <PublicShell>
-        <ErrorMessage message={error || "Отчет не найден"} />
+        <ErrorMessage message={error || (language === "ru" ? "Отчёт не найден" : "Report not found")} />
       </PublicShell>
     );
   }
 
-  const title = [report.vehicle.make, report.vehicle.model].filter(Boolean).join(" ") || "Автомобиль";
+  const title = [report.vehicle.make, report.vehicle.model].filter(Boolean).join(" ") || (language === "ru" ? "Автомобиль" : "Vehicle");
 
   return (
     <PublicShell>
-      <div className="mb-8 overflow-hidden rounded-2xl border border-blue-400/30 bg-gradient-to-br from-blue-500/18 via-surface-900 to-emerald-500/10 p-6 shadow-glow">
+      <div className="mb-8 overflow-hidden rounded-[28px] bg-brand-yellow p-6 sm:p-8">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <Badge className="border-emerald-400/30 bg-emerald-400/10 text-emerald-200">{t("publicReport.title")}</Badge>
-            <h1 className="mt-4 text-3xl font-bold text-white md:text-4xl">{report.vehicle.year ? `${report.vehicle.year} ` : ""}{title}</h1>
-            <p className="mt-2 text-sm uppercase tracking-wide text-slate-400">VIN {report.vehicle.vin}</p>
+          <div className="min-w-0">
+            <Badge className="border-transparent bg-white/60 text-ink">{t("publicReport.title")}</Badge>
+            <h1 className="mt-4 break-words text-3xl font-bold tracking-tight text-ink md:text-4xl">{report.vehicle.year ? `${report.vehicle.year} ` : ""}{title}</h1>
+            <p className="mt-3 break-all text-sm font-medium tracking-wide text-ink/75">VIN {report.vehicle.vin}</p>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-ink/80">{language === "ru" ? "Познакомьтесь с историей автомобиля: обслуживание, пробег и документы — всё в одном месте." : "Get to know this car: servicing, mileage and documents, all in one place."}</p>
           </div>
-          <div className="flex items-center gap-2 rounded-xl border border-slate-700 bg-black/20 px-4 py-3">
+          <div className="flex items-center gap-2 self-start rounded-2xl bg-white px-4 py-3 lg:self-end">
             {report.summary.hashChainValid ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-300" />
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-700" />
             ) : (
-              <XCircle className="h-5 w-5 text-red-300" />
+              <XCircle className="h-5 w-5 shrink-0 text-red-700" />
             )}
-            <span className="text-sm font-semibold text-slate-100">
+            <span className="text-sm font-semibold text-ink">
               {report.summary.hashChainValid ? t("publicReport.hashValid") : t("publicReport.hashInvalid")}
             </span>
           </div>
@@ -81,9 +82,9 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
         <TrustScoreCard trustScore={report.trustScore} publicMode />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <Card>
-          <h2 className="text-lg font-bold text-white">{t("publicReport.vehicleData")}</h2>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,300px)_minmax(0,1fr)]">
+        <Card className="min-w-0">
+          <h2 className="text-lg font-bold text-ink">{t("publicReport.vehicleData")}</h2>
           <div className="mt-4 space-y-3 text-sm">
             <Spec label={t("label.generation")} value={report.vehicle.generation} />
             <Spec label={t("label.engine")} value={report.vehicle.engine} />
@@ -91,26 +92,26 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
             <Spec label={t("label.trim")} value={report.vehicle.trim} />
             <Spec label={t("label.market")} value={report.vehicle.market} />
           </div>
-          <p className="mt-5 text-xs leading-5 text-slate-500">
+          <p className="mt-5 text-xs leading-5 text-muted">
             {t("publicReport.noOwnerData")} {t("attachments.publicOnly")}
           </p>
         </Card>
 
-        <div className="space-y-5">
+        <div className="min-w-0 space-y-5">
           {report.events.length === 0 ? (
-            <Card className="text-slate-400">{t("publicReport.empty")}</Card>
+            <Card className="text-muted">{t("publicReport.empty")}</Card>
           ) : report.events.map((event) => (
             <Card key={event.sequenceNumber}>
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
+              <div className="space-y-4">
+                <div className="min-w-0">
                   <div className="flex flex-wrap gap-2">
                     <Badge>#{event.sequenceNumber}</Badge>
                     <Badge>{getEnumLabel(language, "vehicleEventType", event.type)}</Badge>
                   </div>
-                  <h3 className="mt-3 text-xl font-bold text-white">{event.title}</h3>
-                  {event.description ? <p className="mt-2 text-sm leading-6 text-slate-300">{event.description}</p> : null}
+                  <h3 className="mt-3 break-words text-xl font-bold text-ink">{event.title}</h3>
+                  {event.description ? <p className="mt-2 break-words text-sm leading-6 text-muted">{event.description}</p> : null}
                 </div>
-                <div className="grid gap-2 text-sm sm:grid-cols-2 lg:min-w-[420px]">
+                <div className="grid min-w-0 gap-2 text-sm sm:grid-cols-2">
                   <PublicInfo icon={<CalendarDays className="h-4 w-4" />} label={t("label.date")} value={formatDate(event.eventDate, language)} />
                   <PublicInfo icon={<Gauge className="h-4 w-4" />} label={t("label.odometer")} value={formatKm(event.odometerKm, language)} />
                   <PublicInfo icon={<Coins className="h-4 w-4" />} label={t("label.cost")} value={formatMoney(event.costAmount, event.costCurrency, language)} />
@@ -118,28 +119,31 @@ export default function PublicReportPage({ params }: { params: { publicToken: st
                 </div>
               </div>
 
-              <div className="mt-5 grid gap-2 rounded-lg border border-slate-800 bg-black/20 p-3 text-xs text-slate-500 md:grid-cols-2">
-                <div>prev: <span className="text-slate-300">{shortHash(event.previousEventHash)}</span></div>
-                <div>hash: <span className="text-slate-300">{shortHash(event.eventHash)}</span></div>
-              </div>
+              <details className="mt-5 rounded-2xl border border-line p-3 text-xs text-muted">
+                <summary className="cursor-pointer font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">{language === "ru" ? "Технические сведения" : "Technical details"}</summary>
+                <div className="mt-3 grid gap-2 break-all md:grid-cols-2">
+                  <div>{language === "ru" ? "Предыдущая запись" : "Previous record"}: <span className="font-mono text-ink">{shortHash(event.previousEventHash)}</span></div>
+                  <div>{language === "ru" ? "Эта запись" : "This record"}: <span className="font-mono text-ink">{shortHash(event.eventHash)}</span></div>
+                </div>
+              </details>
 
               {event.attachments.length > 0 ? (
-                <div className="mt-5 rounded-xl border border-slate-800 bg-black/20 p-4">
-                  <h4 className="text-sm font-semibold text-white">{t("publicReport.publicAttachments")}</h4>
+                <div className="mt-5 rounded-2xl border border-line bg-canvas p-4">
+                  <h4 className="text-sm font-semibold text-ink">{t("publicReport.publicAttachments")}</h4>
                   <div className="mt-3 space-y-2">
                     {event.attachments.map((attachment) => (
                       <a
                         key={attachment.id}
                         href={`${API_BASE_URL}${attachment.downloadUrl}`}
-                        className="flex flex-col gap-2 rounded-lg border border-slate-800 bg-surface-900 p-3 text-sm transition hover:border-blue-400/50 sm:flex-row sm:items-center sm:justify-between"
+                        className="flex flex-col gap-2 rounded-2xl border border-line bg-white p-3 text-sm transition hover:border-brand-yellow sm:flex-row sm:items-center sm:justify-between"
                       >
-                        <span>
-                          <span className="block font-semibold text-slate-100">{attachment.originalFilename}</span>
-                          <span className="text-xs text-slate-500">
-                            {getEnumLabel(language, "attachmentType", attachment.type)} · {formatFileSize(attachment.sizeBytes, language)} · {shortHash(attachment.checksumSha256)}
+                        <span className="min-w-0">
+                          <span className="block break-all font-semibold text-ink">{attachment.originalFilename}</span>
+                          <span className="text-xs text-muted">
+                            {getEnumLabel(language, "attachmentType", attachment.type)} · {formatFileSize(attachment.sizeBytes, language)}
                           </span>
                         </span>
-                        <span className="inline-flex items-center gap-2 text-neon-cyan">
+                        <span className="inline-flex shrink-0 items-center gap-2 font-semibold text-ink">
                           <Download className="h-4 w-4" />
                           {t("common.download")}
                         </span>
@@ -160,11 +164,12 @@ function PublicShell({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-canvas px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
-        <header className="mb-8 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-white">
-            Auto<span className="text-neon-cyan">Blog</span>
+        <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
+          <Link href="/" className="inline-flex items-center gap-2.5 text-xl font-bold tracking-tight text-ink">
+            <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-yellow"><CarFront className="h-5 w-5" /></span>
+            <span>auto<span className="font-medium">blog</span>.</span>
           </Link>
           <Badge>{t("publicReport.noAuth")}</Badge>
         </header>
@@ -176,30 +181,30 @@ function PublicShell({ children }: { children: ReactNode }) {
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <Card>
-      <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-bold text-white">{value}</div>
+    <Card className="min-w-0">
+      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
+      <div className="mt-2 break-words text-xl font-bold leading-7 text-ink">{value}</div>
     </Card>
   );
 }
 
 function Spec({ label, value }: { label: string; value?: string | number | null }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-slate-800 pb-3">
-      <span className="text-slate-500">{label}</span>
-      <span className="text-right font-semibold text-slate-200">{value || "—"}</span>
+    <div className="grid min-w-0 grid-cols-2 gap-3 border-b border-line pb-3">
+      <span className="text-muted">{label}</span>
+      <span className="break-words text-right font-semibold text-ink">{value || "—"}</span>
     </div>
   );
 }
 
 function PublicInfo({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+    <div className="min-w-0 rounded-2xl bg-canvas p-3">
+      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted">
         {icon}
         {label}
       </div>
-      <div className="mt-1 font-semibold text-slate-200">{value}</div>
+      <div className="mt-1 break-words font-semibold text-ink">{value}</div>
     </div>
   );
 }

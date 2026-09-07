@@ -16,7 +16,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || !isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-950 text-slate-300">
+      <div className="flex min-h-screen items-center justify-center bg-canvas text-muted" role="status">
         Загружаем AutoBlog…
       </div>
     );

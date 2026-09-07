@@ -84,13 +84,13 @@ export function AccessManagementPanel({ vehicleId }: { vehicleId: string }) {
   return (
     <Card>
       <div className="mb-4 flex items-center gap-2">
-        <Shield className="h-5 w-5 text-neon-cyan" />
-        <h3 className="text-lg font-bold text-white">{t("access.title")}</h3>
+        <Shield className="h-5 w-5 text-ink" />
+        <h3 className="text-lg font-bold text-ink">{t("access.title")}</h3>
       </div>
-      <p className="mb-4 text-sm text-slate-400">{t("access.description")}</p>
+      <p className="mb-4 text-sm text-muted">{t("access.description")}</p>
       <ErrorMessage message={error} />
 
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px_auto]">
+      <div className="grid min-w-0 gap-3">
         <Field label="Email">
           <input
             className={inputClassName()}
@@ -116,23 +116,23 @@ export function AccessManagementPanel({ vehicleId }: { vehicleId: string }) {
       </div>
 
       {loading ? (
-        <p className="mt-4 text-sm text-slate-400">{t("common.loading")}</p>
+        <p className="mt-4 text-sm text-muted">{t("common.loading")}</p>
       ) : (
         <div className="mt-4 space-y-2">
           {entries.map((entry) => (
             <div
               key={entry.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-800 p-3"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line p-3"
             >
-              <div>
-                <div className="text-sm font-semibold text-white">{entry.email}</div>
+              <div className="min-w-0">
+                <div className="break-all text-sm font-semibold text-ink">{entry.email}</div>
                 <div className="mt-1"><RoleBadge role={entry.role} /></div>
               </div>
               {entry.userId !== user?.id && entry.role !== "OWNER" ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  className="h-9 px-3 text-red-200"
+                  className="h-9 px-3 text-red-700"
                   disabled={saving}
                   onClick={() => void revoke(entry)}
                 >

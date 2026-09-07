@@ -87,20 +87,20 @@ function NewVehicleContent() {
 
   return (
     <div>
-      <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+      <Link href="/vehicles" className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
         {t("vehicle.backToVehicles")}
       </Link>
       <SectionHeader title={t("vehicle.newTitle")} description={t("vehicle.newDescription")} />
       <Card className="max-w-4xl">
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+        <form className="grid gap-5 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
             <ErrorMessage
               message={apiError ? readableApiError(apiError, language) : null}
               details={apiError instanceof ApiError ? apiError.details : []}
             />
           </div>
-          <Field label="VIN" error={errors.vin?.message}>
+          <Field label="VIN" hint={language === "ru" ? "17 символов из СТС или ПТС. Буквы I, O и Q не используются." : "17 characters from your registration document. Letters I, O and Q are not used."} error={errors.vin?.message}>
             <input
               className={inputClassName()}
               maxLength={17}
@@ -115,16 +115,16 @@ function NewVehicleContent() {
           <Field label={t("label.market")} error={errors.market?.message}>
             <input className={inputClassName()} {...register("market")} />
           </Field>
-          <Field label="Марка" error={errors.make?.message}>
+          <Field label={language === "ru" ? "Марка" : "Make"} error={errors.make?.message}>
             <input className={inputClassName()} placeholder="Lada" {...register("make")} />
           </Field>
-          <Field label="Модель" error={errors.model?.message}>
+          <Field label={language === "ru" ? "Модель" : "Model"} error={errors.model?.message}>
             <input className={inputClassName()} placeholder="Priora" {...register("model")} />
           </Field>
           <Field label={t("label.generation")} error={errors.generation?.message}>
             <input className={inputClassName()} placeholder="2170" {...register("generation")} />
           </Field>
-          <Field label="Год" error={errors.year?.message}>
+          <Field label={language === "ru" ? "Год выпуска" : "Year"} error={errors.year?.message}>
             <input className={inputClassName()} inputMode="numeric" placeholder="2012" {...register("year")} />
           </Field>
           <Field label={t("label.engine")} error={errors.engine?.message}>
@@ -136,7 +136,7 @@ function NewVehicleContent() {
           <Field label={t("label.trim")} error={errors.trim?.message}>
             <input className={inputClassName()} placeholder="Norma" {...register("trim")} />
           </Field>
-          <div className="flex items-end md:col-span-2">
+          <div className="flex items-end pt-2 md:col-span-2">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? t("vehicle.creating") : t("vehicle.create")}
             </Button>

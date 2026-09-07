@@ -5,10 +5,10 @@ import { cn } from "@/lib/utils";
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-neon-blue text-white shadow-glow hover:bg-blue-500",
-  secondary: "border border-slate-700 bg-surface-800 text-slate-100 hover:border-blue-400/70 hover:bg-surface-700",
-  ghost: "text-slate-300 hover:bg-white/5 hover:text-white",
-  danger: "border border-red-500/40 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+  primary: "bg-brand-yellow text-ink hover:bg-[#F4C524] active:bg-[#EABD25]",
+  secondary: "border border-line bg-white text-ink hover:border-ink/25 hover:bg-canvas",
+  ghost: "text-muted hover:bg-ink/5 hover:text-ink",
+  danger: "border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
 };
 
 export function Button({
@@ -19,7 +19,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         variants[variant],
         className
       )}
@@ -36,7 +36,7 @@ export function ButtonLink({
   return (
     <Link
       className={cn(
-        "inline-flex h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition",
+        "inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold transition-colors",
         variants[variant],
         className
       )}
