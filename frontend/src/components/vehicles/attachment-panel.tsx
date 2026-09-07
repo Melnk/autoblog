@@ -10,7 +10,7 @@ import { PaginationControls } from "@/components/ui/pagination-controls";
 import { downloadAttachment, listAttachments, uploadAttachment } from "@/lib/api/attachments";
 import { readableApiError } from "@/lib/api/client";
 import type { AttachmentType, AttachmentVisibility, EventAttachmentDto } from "@/lib/api/types";
-import { formatFileSize, shortHash } from "@/lib/format";
+import { formatFileSize } from "@/lib/format";
 import {
   getAttachmentTypeOptions,
   getAttachmentVisibilityOptions,
@@ -93,25 +93,28 @@ export function AttachmentPanel({
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-800 bg-black/20 p-4">
+    <div className="mt-4 min-w-0 rounded-2xl border border-line bg-canvas p-3 sm:p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h4 className="text-sm font-semibold text-white">{t("attachments.title")}</h4>
+        <h4 className="text-sm font-semibold text-ink">{t("attachments.title")}</h4>
         <Badge>{attachments.length}</Badge>
       </div>
       <ErrorMessage message={error} />
       {attachments.length > 0 ? (
         <div className="mt-3 space-y-2">
           {attachments.map((attachment) => (
-            <div key={attachment.id} className="flex flex-col gap-3 rounded-lg border border-slate-800 bg-surface-900 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div key={attachment.id} className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-slate-100">{attachment.originalFilename}</div>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-400">
+                <div className="break-all text-sm font-semibold text-ink">{attachment.originalFilename}</div>
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted">
                   <span>{getEnumLabel(language, "attachmentType", attachment.type)}</span>
                   <span>{getEnumLabel(language, "attachmentVisibility", attachment.visibility)}</span>
                   <span>{formatFileSize(attachment.sizeBytes, language)}</span>
-                  <span>{shortHash(attachment.checksumSha256)}</span>
                 </div>
-                {attachment.description ? <p className="mt-1 text-xs text-slate-500">{attachment.description}</p> : null}
+                {attachment.description ? <p className="mt-1 break-words text-xs text-muted">{attachment.description}</p> : null}
+                <details className="mt-2 text-xs text-muted">
+                  <summary className="cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">{language === "ru" ? "Технические сведения" : "Technical details"}</summary>
+                  <p className="mt-2 break-all font-mono">SHA-256: {attachment.checksumSha256}</p>
+                </details>
               </div>
               <Button type="button" variant="secondary" className="h-9 shrink-0" onClick={() => void onDownload(attachment)}>
                 <Download className="h-4 w-4" />
@@ -121,13 +124,14 @@ export function AttachmentPanel({
           ))}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">{t("attachments.empty")}</p>
+        <p className="mt-3 text-sm text-muted">{t("attachments.empty")}</p>
       )}
       <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {canUpload ? (
-        <>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <details className="mt-4 border-t border-line pt-4">
+          <summary className="cursor-pointer text-sm font-semibold text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">{language === "ru" ? "Добавить чек или документ" : "Add a receipt or document"}</summary>
+          <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2">
             <Field label={t("label.file")}>
               <input className={inputClassName("pt-2")} type="file" onChange={(event) => setFile(event.target.files?.[0] ?? null)} />
             </Field>
@@ -140,7 +144,7 @@ export function AttachmentPanel({
               <select className={inputClassName()} value={visibility} onChange={(event) => setVisibility(event.target.value as AttachmentVisibility)}>
                 {visibilityOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
               </select>
-              <span className="mt-1 block text-xs text-slate-500">
+              <span className="mt-1 block text-xs text-muted">
                 {selectedVisibility?.description}
               </span>
             </Field>
@@ -152,7 +156,7 @@ export function AttachmentPanel({
             <Upload className="h-4 w-4" />
             {uploading ? t("attachments.uploading") : t("attachments.upload")}
           </Button>
-        </>
+        </details>
       ) : null}
     </div>
   );

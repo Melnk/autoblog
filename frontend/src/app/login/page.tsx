@@ -1,21 +1,20 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Car } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAuth } from "@/components/auth/auth-provider";
+import { AuthScreen, authErrorMessage } from "@/components/auth/auth-screen";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Field, inputClassName } from "@/components/ui/form";
-import { ApiError, readableApiError } from "@/lib/api/client";
 
 const schema = z.object({
-  email: z.string().email("Введите email"),
+  email: z.string().email("Введите адрес электронной почты"),
   password: z.string().min(1, "Введите пароль")
 });
 
@@ -44,72 +43,40 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthScreen title="Вход" subtitle="Продолжите работу с историей автомобиля">
-      <Card className="w-full max-w-md">
-        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          <ErrorMessage
-            message={authErrorMessage(apiError, "login")}
-            details={apiError instanceof ApiError ? apiError.details : []}
-            debug={apiError instanceof ApiError ? {
-              status: apiError.status,
-              backendMessage: apiError.message,
-              path: apiError.path
-            } : undefined}
+    <AuthScreen title="Рады видеть вас снова" subtitle="Заходите в свой гараж. История автомобиля уже ждёт вас.">
+      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+        <ErrorMessage message={authErrorMessage(apiError, "login")} />
+        <Field label="Электронная почта" error={errors.email?.message}>
+          <input
+            className={inputClassName("h-12")}
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.ru"
+            aria-invalid={Boolean(errors.email)}
+            {...register("email")}
           />
-          <Field label="Email" error={errors.email?.message}>
-            <input className={inputClassName()} autoComplete="email" {...register("email")} />
-          </Field>
-          <Field label="Пароль" error={errors.password?.message}>
-            <input className={inputClassName()} type="password" autoComplete="current-password" {...register("password")} />
-          </Field>
-          <Button className="w-full" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Входим…" : "Войти"}
-          </Button>
-        </form>
-        <p className="mt-6 text-center text-sm text-slate-400">
-          Нет аккаунта?{" "}
-          <Link href="/register" className="font-semibold text-neon-cyan hover:text-white">
-            Зарегистрироваться
-          </Link>
-        </p>
-      </Card>
+        </Field>
+        <Field label="Пароль" error={errors.password?.message}>
+          <input
+            className={inputClassName("h-12")}
+            type="password"
+            autoComplete="current-password"
+            placeholder="Введите пароль"
+            aria-invalid={Boolean(errors.password)}
+            {...register("password")}
+          />
+        </Field>
+        <Button className="!mt-7 h-12 w-full" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Заходим в гараж…" : "Войти"}
+          {!isSubmitting ? <ArrowRight className="h-4 w-4" /> : null}
+        </Button>
+      </form>
+      <p className="mt-7 text-center text-sm text-muted">
+        Ещё нет аккаунта?{" "}
+        <Link href="/register" className="rounded-sm font-semibold text-ink underline decoration-brand-yellow decoration-2 underline-offset-4 hover:decoration-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">
+          Создать аккаунт
+        </Link>
+      </p>
     </AuthScreen>
-  );
-}
-
-function authErrorMessage(error: unknown, mode: "login" | "register") {
-  if (!error) {
-    return null;
-  }
-  if (error instanceof ApiError) {
-    if (error.status === undefined) {
-      return "Backend недоступен. Проверьте, что API запущен на localhost:8080";
-    }
-    if (mode === "login" && error.status === 401) {
-      return "Неверный email или пароль";
-    }
-    if (mode === "register" && error.status === 409) {
-      return "Пользователь с таким email уже существует";
-    }
-    return error.message || readableApiError(error);
-  }
-  return readableApiError(error);
-}
-
-function AuthScreen({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/30 bg-blue-500/15 text-neon-cyan shadow-glow">
-            <Car className="h-7 w-7" />
-          </div>
-          <h1 className="text-3xl font-bold text-white">Auto<span className="text-neon-cyan">Blog</span></h1>
-          <p className="mt-3 text-xl font-semibold text-white">{title}</p>
-          <p className="mt-1 text-sm text-slate-400">{subtitle}</p>
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }

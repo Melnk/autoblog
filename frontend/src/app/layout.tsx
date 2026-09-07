@@ -5,7 +5,7 @@ import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "AutoBlog",
-  description: "Vehicle-centric digital history platform"
+  description: "AutoBlog — всё о вашем автомобиле в одном месте. Обслуживание, расходы, документы и история для будущего покупателя."
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

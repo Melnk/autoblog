@@ -19,10 +19,10 @@ export function ErrorMessage({
     return null;
   }
   return (
-    <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+    <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
       <div>{message}</div>
       {details.length > 0 ? (
-        <ul className="mt-2 list-disc space-y-1 pl-5 text-red-100/90">
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-red-800">
           {details.map((detail, index) => (
             <li key={`${detail.field ?? "detail"}-${index}`}>
               {detail.field ? `${detail.field}: ` : ""}{detail.message}
@@ -31,11 +31,12 @@ export function ErrorMessage({
         </ul>
       ) : null}
       {process.env.NODE_ENV === "development" && debug ? (
-        <div className="mt-3 rounded-md border border-red-300/20 bg-black/20 p-3 font-mono text-xs text-red-100/80">
+        <details className="mt-3 break-all rounded-xl border border-red-200 p-3 font-mono text-xs text-red-800">
+          <summary className="cursor-pointer">Технические сведения</summary>
           {debug.status ? <div>HTTP {debug.status}</div> : null}
           {debug.backendMessage ? <div>{debug.backendMessage}</div> : null}
           {debug.path ? <div>{debug.path}</div> : null}
-        </div>
+        </details>
       ) : null}
     </div>
   );

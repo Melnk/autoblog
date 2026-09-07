@@ -48,11 +48,11 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 const dueStateStyles: Record<ReminderDueState, string> = {
-  OVERDUE: "border-red-400/30 bg-red-500/10 text-red-200",
-  DUE_SOON: "border-amber-300/30 bg-amber-400/10 text-amber-100",
-  UPCOMING: "border-blue-400/30 bg-blue-400/10 text-blue-100",
-  COMPLETED: "border-emerald-400/30 bg-emerald-400/10 text-emerald-100",
-  CANCELLED: "border-slate-600 bg-slate-800 text-slate-300"
+  OVERDUE: "border-red-200 bg-red-50 text-red-700",
+  DUE_SOON: "border-amber-200 bg-amber-50 text-amber-800",
+  UPCOMING: "border-brand-yellow bg-brand-soft text-ink",
+  COMPLETED: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  CANCELLED: "border-line bg-canvas text-ink"
 };
 
 export function ReminderPanel({ vehicleId, canEdit }: { vehicleId: string; canEdit: boolean }) {
@@ -142,13 +142,13 @@ export function ReminderPanel({ vehicleId, canEdit }: { vehicleId: string; canEd
 
   return (
     <Card>
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 basis-40">
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-neon-cyan" />
-            <h3 className="text-lg font-bold text-white">{t("reminders.title")}</h3>
+            <Bell className="h-5 w-5 text-ink" />
+            <h3 className="text-lg font-bold text-ink">{t("reminders.title")}</h3>
           </div>
-          <p className="mt-1 text-sm text-slate-400">{t("reminders.emptyDescription")}</p>
+          <p className="mt-1 text-sm text-muted">{t("reminders.emptyDescription")}</p>
         </div>
         {canEdit ? (
           <Button type="button" className="h-9 shrink-0 px-3" onClick={() => setFormOpen((value) => !value)}>
@@ -169,14 +169,14 @@ export function ReminderPanel({ vehicleId, canEdit }: { vehicleId: string; canEd
         details={error instanceof ApiError ? error.details : []}
       />
       {message ? (
-        <div className="mb-4 rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm text-emerald-100">
+        <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
           {message}
         </div>
       ) : null}
 
       {canEdit && formOpen ? (
-        <form className="mb-5 rounded-xl border border-slate-800 bg-black/20 p-4" onSubmit={handleSubmit(onSubmit)}>
-          <h4 className="mb-3 text-sm font-semibold text-white">{t("reminders.new")}</h4>
+        <form className="mb-5 rounded-2xl border border-line bg-canvas p-4" onSubmit={handleSubmit(onSubmit)}>
+          <h4 className="mb-3 text-sm font-semibold text-ink">{t("reminders.new")}</h4>
           <div className="grid gap-3">
             <Field label={t("label.title")} error={errors.title?.message}>
               <input className={inputClassName()} placeholder={language === "ru" ? "Заменить масло" : "Change oil"} {...register("title")} />
@@ -210,11 +210,11 @@ export function ReminderPanel({ vehicleId, canEdit }: { vehicleId: string; canEd
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-slate-400">{t("common.loading")}</p>
+        <p className="text-sm text-muted">{t("common.loading")}</p>
       ) : reminders.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-700 p-4">
-          <h4 className="text-sm font-semibold text-slate-100">{t("reminders.emptyTitle")}</h4>
-          <p className="mt-1 text-sm text-slate-500">{t("reminders.emptyDescription")}</p>
+        <div className="rounded-2xl border border-dashed border-line p-4">
+          <h4 className="text-sm font-semibold text-ink">{t("reminders.emptyTitle")}</h4>
+          <p className="mt-1 text-sm text-muted">{t("reminders.emptyDescription")}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -252,7 +252,7 @@ function ReminderCard({
   const isActive = reminder.status === "ACTIVE";
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-surface-900 p-4">
+    <div className="rounded-2xl border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -261,8 +261,8 @@ function ReminderCard({
             </Badge>
             <Badge>{getEnumLabel(language, "reminderType", reminder.type)}</Badge>
           </div>
-          <h4 className="mt-3 text-sm font-semibold text-white">{reminder.title}</h4>
-          {reminder.description ? <p className="mt-1 text-sm leading-5 text-slate-400">{reminder.description}</p> : null}
+          <h4 className="mt-3 break-words text-sm font-semibold text-ink">{reminder.title}</h4>
+          {reminder.description ? <p className="mt-1 break-words text-sm leading-5 text-muted">{reminder.description}</p> : null}
         </div>
       </div>
 
@@ -303,21 +303,21 @@ function ReminderCard({
 
 function SummaryPill({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-black/20 p-3">
-      <div className="text-lg font-bold text-white">{value}</div>
-      <div className="mt-1 text-[11px] uppercase tracking-wide text-slate-500">{label}</div>
+    <div className="min-w-0 rounded-2xl bg-canvas p-3">
+      <div className="text-lg font-bold text-ink">{value}</div>
+      <div className="mt-1 break-words text-[11px] leading-4 text-muted">{label}</div>
     </div>
   );
 }
 
 function Metric({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-black/20 p-2">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-500">
+    <div className="min-w-0 rounded-2xl bg-canvas p-3">
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted">
         {icon}
         {label}
       </div>
-      <div className="mt-1 font-semibold text-slate-200">{value}</div>
+      <div className="mt-1 break-words font-semibold text-ink">{value}</div>
     </div>
   );
 }

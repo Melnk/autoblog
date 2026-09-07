@@ -47,7 +47,7 @@ const schema = z.object({
       context.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["payload"],
-        message: "Payload должен быть валидным JSON"
+        message: "Проверьте формат дополнительных данных: нужен корректный JSON"
       });
     }
   }
@@ -115,7 +115,7 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
 
   return (
     <div>
-      <Link href={`/vehicles/${vehicleId}`} className="mb-6 inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white">
+      <Link href={`/vehicles/${vehicleId}`} className="mb-6 inline-flex items-center gap-2 text-sm text-muted hover:text-ink">
         <ArrowLeft className="h-4 w-4" />
         {t("events.backToVehicle")}
       </Link>
@@ -126,10 +126,10 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
           details={apiError instanceof ApiError ? apiError.details : []}
         />
       ) : permissionLoading || !canEdit ? (
-        <Card className="text-slate-400">{t("common.loading")}</Card>
+        <Card className="text-muted">{t("common.loading")}</Card>
       ) : (
-      <Card className="max-w-5xl">
-        <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
+      <Card className="max-w-4xl">
+        <form className="grid gap-5 md:grid-cols-2" onSubmit={handleSubmit(onSubmit)}>
           <div className="md:col-span-2">
             <ErrorMessage
               message={apiError ? readableApiError(apiError, language) : null}
@@ -145,7 +145,7 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
             <input className={inputClassName()} type="date" {...register("eventDate")} />
           </Field>
           <Field label={t("label.title")} error={errors.title?.message}>
-            <input className={inputClassName()} placeholder="Замена масла" {...register("title")} />
+            <input className={inputClassName()} placeholder={language === "ru" ? "Например, замена масла" : "For example, oil change"} {...register("title")} />
           </Field>
           <Field label={t("label.odometerKm")} error={errors.odometerKm?.message}>
             <input className={inputClassName()} inputMode="numeric" placeholder="120000" {...register("odometerKm")} />
@@ -157,23 +157,26 @@ function NewEventContent({ vehicleId }: { vehicleId: string }) {
             <input className={inputClassName()} {...register("costCurrency")} />
           </Field>
           <Field label={t("label.service")} error={errors.serviceName?.message}>
-            <input className={inputClassName()} placeholder="Гаражный сервис" {...register("serviceName")} />
+            <input className={inputClassName()} placeholder={language === "ru" ? "Где обслуживали автомобиль" : "Where the car was serviced"} {...register("serviceName")} />
           </Field>
           <div className="md:col-span-2">
             <Field label={t("label.description")} error={errors.description?.message}>
               <textarea className={textareaClassName()} {...register("description")} />
             </Field>
           </div>
-          <div className="md:col-span-2">
-            <Field
-              label="Payload JSON"
-              hint="Только extension details. Пробег, стоимость, валюта и сервис должны быть top-level полями."
-              error={errors.payload?.message}
-            >
-              <textarea className={textareaClassName()} placeholder='{"oil":"5W-40","parts":["oil_filter"]}' {...register("payload")} />
-            </Field>
-          </div>
-          <div className="md:col-span-2">
+          <details className="rounded-2xl border border-line bg-canvas p-4 md:col-span-2" open={errors.payload ? true : undefined}>
+            <summary className="cursor-pointer text-sm font-medium text-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink">{language === "ru" ? "Технические сведения · необязательно" : "Technical details · optional"}</summary>
+            <div className="mt-4">
+              <Field
+                label={language === "ru" ? "Дополнительные данные (JSON)" : "Additional data (JSON)"}
+                hint={language === "ru" ? "Например, марка масла или список запчастей. Основные сведения укажите в полях выше." : "For example, an oil grade or parts list. Use the fields above for the main event details."}
+                error={errors.payload?.message}
+              >
+                <textarea className={textareaClassName()} placeholder='{"oil":"5W-40","parts":["oil_filter"]}' {...register("payload")} />
+              </Field>
+            </div>
+          </details>
+          <div className="pt-2 md:col-span-2">
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? t("events.adding") : t("events.add")}
             </Button>

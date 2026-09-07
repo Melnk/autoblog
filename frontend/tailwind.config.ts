@@ -9,23 +9,15 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        surface: {
-          950: "#050914",
-          900: "#080e1c",
-          850: "#0c1426",
-          800: "#111b31",
-          700: "#1b2944"
-        },
-        neon: {
-          blue: "#2f8cff",
-          cyan: "#21d4fd",
-          violet: "#935cff",
-          green: "#21e6a7"
-        }
+        canvas: "#F6F6F2",
+        ink: "#242424",
+        muted: "#6B6B63",
+        line: "#E8E8E2",
+        brand: { yellow: "#FFD337", soft: "#FFF5C2", ink: "#242424" }
       },
       boxShadow: {
-        glow: "0 0 36px rgba(47, 140, 255, 0.22)",
-        "glow-violet": "0 0 36px rgba(147, 92, 255, 0.2)"
+        card: "0 4px 24px rgba(36, 36, 36, 0.035)",
+        lift: "0 12px 32px rgba(36, 36, 36, 0.08)"
       }
     }
   },

@@ -1,5 +1,7 @@
 # AutoBlog
 
+План ближайших доработок для российского рынка: [docs/ROADMAP.md](docs/ROADMAP.md). Описание нового чёрно-жёлтого интерфейса и его проверки: [frontend/README.md](frontend/README.md#дизайн-и-развитие).
+
 AutoBlog is a Spring Boot backend for vehicle-centric digital history. The main aggregate is a vehicle, and every vehicle event is append-only and hash-linked to the previous event so the timeline can be verified.
 
 ## Stack
